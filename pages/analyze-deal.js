@@ -11,9 +11,12 @@ export default function AnalyzeDeal({ user }) {
     roadAccess: "Yes",
     utilities: "Yes",
     zoningNotes: "",
+    address: "",
+    notes: "",
   });
 
   const [result, setResult] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -101,70 +104,86 @@ export default function AnalyzeDeal({ user }) {
         <h2 className="text-2xl font-bold mb-6">Analyze New Land Deal</h2>
         
         <form onSubmit={handleSubmit} className="grid gap-4 max-w-lg bg-gray-800 p-6 rounded-lg shadow-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block mb-2 text-sm font-medium">Purchase Price ($)</label>
+              <input 
+                name="purchasePrice" 
+                type="number" 
+                placeholder="Enter purchase price" 
+                onChange={handleChange}
+                value={form.purchasePrice} 
+                className="w-full p-2 rounded text-black" 
+                required 
+              />
+            </div>
+            
+            <div>
+              <label className="block mb-2 text-sm font-medium">Market Value ($)</label>
+              <input 
+                name="marketValue" 
+                type="number" 
+                placeholder="Enter market value" 
+                onChange={handleChange}
+                value={form.marketValue} 
+                className="w-full p-2 rounded text-black" 
+                required 
+              />
+            </div>
+          </div>
+          
           <div>
-            <label className="block mb-2 text-sm font-medium">Purchase Price ($)</label>
+            <label className="block mb-2 text-sm font-medium">Property Address</label>
             <input 
-              name="purchasePrice" 
-              type="number" 
-              placeholder="Enter purchase price" 
+              name="address" 
+              type="text" 
+              placeholder="Enter property address" 
               onChange={handleChange}
-              value={form.purchasePrice} 
+              value={form.address} 
               className="w-full p-2 rounded text-black" 
-              required 
             />
           </div>
           
-          <div>
-            <label className="block mb-2 text-sm font-medium">Market Value ($)</label>
-            <input 
-              name="marketValue" 
-              type="number" 
-              placeholder="Enter market value" 
-              onChange={handleChange}
-              value={form.marketValue} 
-              className="w-full p-2 rounded text-black" 
-              required 
-            />
-          </div>
-          
-          <div>
-            <label className="block mb-2 text-sm font-medium">Seller Motivation</label>
-            <select 
-              name="sellerMotivation" 
-              onChange={handleChange} 
-              value={form.sellerMotivation}
-              className="w-full p-2 rounded text-black"
-            >
-              <option>Hot</option>
-              <option>Warm</option>
-              <option>Neutral</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block mb-2 text-sm font-medium">Road Access</label>
-            <select 
-              name="roadAccess" 
-              onChange={handleChange} 
-              value={form.roadAccess}
-              className="w-full p-2 rounded text-black"
-            >
-              <option>Yes</option>
-              <option>No</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block mb-2 text-sm font-medium">Utilities</label>
-            <select 
-              name="utilities" 
-              onChange={handleChange} 
-              value={form.utilities}
-              className="w-full p-2 rounded text-black"
-            >
-              <option>Yes</option>
-              <option>No</option>
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block mb-2 text-sm font-medium">Seller Motivation</label>
+              <select 
+                name="sellerMotivation" 
+                onChange={handleChange} 
+                value={form.sellerMotivation}
+                className="w-full p-2 rounded text-black"
+              >
+                <option>Hot</option>
+                <option>Warm</option>
+                <option>Neutral</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block mb-2 text-sm font-medium">Road Access</label>
+              <select 
+                name="roadAccess" 
+                onChange={handleChange} 
+                value={form.roadAccess}
+                className="w-full p-2 rounded text-black"
+              >
+                <option>Yes</option>
+                <option>No</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block mb-2 text-sm font-medium">Utilities</label>
+              <select 
+                name="utilities" 
+                onChange={handleChange} 
+                value={form.utilities}
+                className="w-full p-2 rounded text-black"
+              >
+                <option>Yes</option>
+                <option>No</option>
+              </select>
+            </div>
           </div>
           
           <div>
@@ -174,6 +193,17 @@ export default function AnalyzeDeal({ user }) {
               placeholder="Enter any zoning details or notes" 
               onChange={handleChange}
               value={form.zoningNotes} 
+              className="w-full p-2 rounded text-black h-16" 
+            />
+          </div>
+          
+          <div>
+            <label className="block mb-2 text-sm font-medium">Additional Notes</label>
+            <textarea 
+              name="notes" 
+              placeholder="Enter any additional observations or notes about the property" 
+              onChange={handleChange}
+              value={form.notes} 
               className="w-full p-2 rounded text-black h-24" 
             />
           </div>
@@ -213,12 +243,55 @@ export default function AnalyzeDeal({ user }) {
                 <span className="font-bold">{result.exitStrategy}</span>
               </div>
               
+              {saveSuccess && (
+                <div className="mb-4 p-3 bg-green-900/50 border border-green-500 rounded-md text-green-400">
+                  Deal saved successfully! View it in your <Link href="/saved-deals" className="underline">saved deals</Link>.
+                </div>
+              )}
+              
               <div className="pt-4 flex items-center justify-between">
                 <Link href="/saved-deals" className="text-blue-400 hover:underline">
                   View All Saved Deals
                 </Link>
                 <button
-                  onClick={() => alert('Deal saved successfully! This feature will be fully implemented when we connect to MongoDB.')}
+                  onClick={() => {
+                    // Get existing saved deals from localStorage
+                    const existingDeals = localStorage.getItem('savedDeals') 
+                      ? JSON.parse(localStorage.getItem('savedDeals')) 
+                      : [];
+                    
+                    // Create new deal object with timestamp
+                    const newDeal = {
+                      id: Date.now().toString(), // Unique ID for each deal
+                      timestamp: new Date().toISOString(),
+                      sniperScore: result.sniperScore,
+                      recommendedOffer: result.recommendedOffer,
+                      riskLevel: result.riskLevel,
+                      exitStrategy: result.exitStrategy,
+                      address: form.address || 'Unnamed Property',
+                      notes: form.notes || '',
+                      purchasePrice: parseFloat(form.purchasePrice),
+                      marketValue: parseFloat(form.marketValue),
+                      sellerMotivation: form.sellerMotivation,
+                      roadAccess: form.roadAccess,
+                      utilities: form.utilities,
+                      zoningNotes: form.zoningNotes || '',
+                    };
+                    
+                    // Add new deal to array
+                    const updatedDeals = [newDeal, ...existingDeals];
+                    
+                    // Save back to localStorage
+                    localStorage.setItem('savedDeals', JSON.stringify(updatedDeals));
+                    
+                    // Show success message
+                    setSaveSuccess(true);
+                    
+                    // Clear success message after 3 seconds
+                    setTimeout(() => {
+                      setSaveSuccess(false);
+                    }, 3000);
+                  }}
                   className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded font-medium"
                 >
                   Save Deal
