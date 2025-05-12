@@ -179,20 +179,14 @@ export default function AnalyzeDeal() {
                   <h1 className="text-xl font-bold text-gray-900 dark:text-white">RE Hustle</h1>
                 </div>
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                  <Link href="/dashboard">
-                    <a className="border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                      Dashboard
-                    </a>
+                  <Link href="/dashboard" className="border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Dashboard
                   </Link>
-                  <Link href="/analyze-deal">
-                    <a className="border-green-500 text-gray-900 dark:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                      Analyze Deal
-                    </a>
+                  <Link href="/analyze-deal" className="border-green-500 text-gray-900 dark:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Analyze Deal
                   </Link>
-                  <Link href="/saved-deals">
-                    <a className="border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                      Saved Deals
-                    </a>
+                  <Link href="/saved-deals" className="border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Saved Deals
                   </Link>
                 </div>
               </div>
