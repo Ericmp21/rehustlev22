@@ -95,7 +95,7 @@ export default function Login() {
           </div>
 
           <div className="mt-4 text-center text-xs text-slate-500">
-            <p>For testing, use: test@example.com with any password</p>
+            <p>For testing, use: test@example.com / password123</p>
           </div>
         </form>
       </div>
