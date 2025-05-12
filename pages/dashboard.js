@@ -12,7 +12,28 @@ export default function Dashboard({ user }) {
       
       <header className="bg-gray-800 p-4 shadow-md">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-green-400">RE Hustle V2</h1>
+          <div className="flex items-center space-x-6">
+            <h1 className="text-2xl font-bold text-green-400">RE Hustle V2</h1>
+            <nav>
+              <ul className="flex space-x-4">
+                <li>
+                  <Link href="/dashboard" className="text-green-400 font-bold">
+                    Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/analyze-deal" className="hover:text-green-400">
+                    Analyze Deal
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/saved-deals" className="hover:text-green-400">
+                    Saved Deals
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          </div>
           <div className="flex items-center space-x-4">
             <span>{user?.email}</span>
             <button 
@@ -50,12 +71,12 @@ export default function Dashboard({ user }) {
               <p className="text-gray-300 mb-4">
                 View and manage your previously analyzed real estate deals.
               </p>
-              <button 
-                className="block w-full bg-gray-600 hover:bg-gray-700 text-center py-2 rounded font-medium"
-                disabled
+              <Link 
+                href="/saved-deals"
+                className="block w-full bg-green-500 hover:bg-green-600 text-center py-2 rounded font-medium"
               >
-                Coming Soon
-              </button>
+                View Saved Deals
+              </Link>
             </div>
           </div>
           

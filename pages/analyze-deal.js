@@ -77,6 +77,11 @@ export default function AnalyzeDeal({ user }) {
                     Analyze Deal
                   </Link>
                 </li>
+                <li>
+                  <Link href="/saved-deals" className="hover:text-green-400">
+                    Saved Deals
+                  </Link>
+                </li>
               </ul>
             </nav>
           </div>
@@ -203,9 +208,21 @@ export default function AnalyzeDeal({ user }) {
                   result.riskLevel === 'Yellow' ? 'text-yellow-400' : 'text-red-400'
                 }`}>{result.riskLevel}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center border-b border-gray-700 pb-2">
                 <span className="font-medium">Exit Strategy:</span>
                 <span className="font-bold">{result.exitStrategy}</span>
+              </div>
+              
+              <div className="pt-4 flex items-center justify-between">
+                <Link href="/saved-deals" className="text-blue-400 hover:underline">
+                  View All Saved Deals
+                </Link>
+                <button
+                  onClick={() => alert('Deal saved successfully! This feature will be fully implemented when we connect to MongoDB.')}
+                  className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded font-medium"
+                >
+                  Save Deal
+                </button>
               </div>
             </div>
           </div>
