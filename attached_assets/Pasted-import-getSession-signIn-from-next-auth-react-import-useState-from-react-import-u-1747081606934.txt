@@ -1,0 +1,80 @@
+import { getSession, signIn } from "next-auth/react";
+import { useState } from "react";
+import { useRouter } from "next/router";
+
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
+
+    if (res?.error) {
+      setError("Invalid login. Please try again.");
+    } else {
+      router.push("/dashboard");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4">
+      <form
+        onSubmit={handleLogin}
+        className="bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md"
+      >
+        <h1 className="text-2xl font-bold mb-6 text-green-400">Login to RE Hustle V2</h1>
+
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+
+        <label className="block mb-2 text-sm font-medium">Email</label>
+        <input
+          type="email"
+          className="w-full p-2 mb-4 rounded bg-gray-700 border border-gray-600 focus:outline-none"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+
+        <label className="block mb-2 text-sm font-medium">Password</label>
+        <input
+          type="password"
+          className="w-full p-2 mb-6 rounded bg-gray-700 border border-gray-600 focus:outline-none"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
+        <button
+          type="submit"
+          className="w-full bg-green-500 hover:bg-green-600 transition text-white font-bold py-2 px-4 rounded"
+        >
+          Login
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export async function getServerSideProps(context) {
+  const session = await getSession(context);
+  if (session) {
+    return {
+      redirect: {
+        destination: "/dashboard",
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: {},
+  };
+}

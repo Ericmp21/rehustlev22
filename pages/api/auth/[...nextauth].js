@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
 import clientPromise from '../../../lib/mongodb';
-import { findUserByEmail, comparePassword } from '../../../lib/auth';
+import { getUserByEmail, verifyPassword } from '../../../lib/auth';
 
 export default NextAuth({
   adapter: MongoDBAdapter(clientPromise),
@@ -14,63 +14,57 @@ export default NextAuth({
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        // Check if credentials exist
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Email and password required');
+        if (!credentials) {
+          return null;
         }
-
-        // Find the user by email
-        const user = await findUserByEmail(credentials.email);
         
-        // If no user is found, return null
+        // Look up the user with the provided email
+        const user = await getUserByEmail(credentials.email);
+        
+        // If no user found, return null
         if (!user) {
-          throw new Error('No user found with this email');
+          return null;
         }
         
-        // Check if the password is correct
-        const isValid = await comparePassword(credentials.password, user.password);
+        // Verify the password
+        const isValid = await verifyPassword(credentials.password, user.password);
         
-        // If the password is incorrect, return null
+        // If password doesn't match, return null
         if (!isValid) {
-          throw new Error('Invalid password');
+          return null;
         }
         
-        // Return the user data (don't include the password)
+        // Return the user object (without the password)
         return {
           id: user._id.toString(),
           email: user.email,
-          plan: user.plan,
-          customerId: user.customerId,
+          name: user.name,
         };
       }
     }),
   ],
-  pages: {
-    signIn: '/login',
-  },
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {
+      // Include user ID in the token if available
       if (user) {
-        // Add user info to the token
-        token.id = user.id;
-        token.email = user.email;
-        token.plan = user.plan;
-        token.customerId = user.customerId;
+        token.userId = user.id;
       }
       return token;
     },
     async session({ session, token }) {
-      // Add user info to the session
-      session.user.id = token.id;
-      session.user.plan = token.plan;
-      session.user.customerId = token.customerId;
+      // Include user ID in the session
+      if (token) {
+        session.user.id = token.userId;
+      }
       return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
+  pages: {
+    signIn: '/login',
+  },
 });
