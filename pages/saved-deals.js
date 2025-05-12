@@ -6,23 +6,64 @@ import Link from "next/link";
 export default function SavedDeals({ user }) {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Load deals from localStorage
+  // Load deals from MongoDB via API
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedDeals = localStorage.getItem('savedDeals') 
-        ? JSON.parse(localStorage.getItem('savedDeals')) 
-        : [];
-      setDeals(savedDeals);
-      setLoading(false);
-    }
+    const fetchDeals = async () => {
+      try {
+        const response = await fetch('/api/deals');
+        
+        if (!response.ok) {
+          throw new Error(`Error fetching deals: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        setDeals(data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching deals:', err);
+        setError('Failed to load deals. Using local storage as fallback.');
+        
+        // Fallback to localStorage
+        if (typeof window !== 'undefined') {
+          const savedDeals = localStorage.getItem('savedDeals') 
+            ? JSON.parse(localStorage.getItem('savedDeals')) 
+            : [];
+          setDeals(savedDeals);
+          setLoading(false);
+        }
+      }
+    };
+    
+    fetchDeals();
   }, []);
 
   // Handle deal deletion
-  const deleteDeal = (id) => {
-    const updatedDeals = deals.filter(deal => deal.id !== id);
-    setDeals(updatedDeals);
-    localStorage.setItem('savedDeals', JSON.stringify(updatedDeals));
+  const deleteDeal = async (id) => {
+    try {
+      // If the deal has an _id, it's from MongoDB
+      if (id.length > 10) {
+        const response = await fetch(`/api/deals/${id}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to delete deal: ${response.statusText}`);
+        }
+        
+        // Update local state after successful deletion
+        setDeals(deals.filter(deal => deal._id !== id));
+      } else {
+        // Fallback for localStorage deals
+        const updatedDeals = deals.filter(deal => deal.id !== id);
+        setDeals(updatedDeals);
+        localStorage.setItem('savedDeals', JSON.stringify(updatedDeals));
+      }
+    } catch (err) {
+      console.error('Error deleting deal:', err);
+      alert('Failed to delete deal. Please try again.');
+    }
   };
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -78,6 +119,11 @@ export default function SavedDeals({ user }) {
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin h-10 w-10 border-4 border-gray-200 rounded-full border-t-green-500"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-900/50 border border-red-500 p-4 mb-6 rounded-lg">
+            <p className="text-red-300 mb-2 font-medium">Error</p>
+            <p className="text-white">{error}</p>
           </div>
         ) : deals.length > 0 ? (
           <div className="grid gap-6">

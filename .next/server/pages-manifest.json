@@ -3,8 +3,8 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
+  "/404": "pages/404.js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
   "/account": "pages/account.js",
-  "/404": "pages/404.js",
   "/login": "pages/login.js"
 }

@@ -797,68 +797,103 @@ export default function AnalyzeDeal({ user }) {
     setResult(calculationResult);
   };
 
-  // Handle saving deal to localStorage and sync to CRM if enabled
+  // Handle saving deal to MongoDB and sync to CRM if enabled
   const saveDeal = async () => {
     // Reset status messages
     setSaveSuccess(false);
     setCrmSuccess(false);
     setCrmError(null);
     
-    // Get existing saved deals from localStorage
-    const existingDeals = localStorage.getItem('savedDeals') 
-      ? JSON.parse(localStorage.getItem('savedDeals')) 
-      : [];
-    
     // Get current form data
     const currentFormData = formData[propertyType];
     
     // Create new deal object with timestamp
     const newDeal = {
-      id: Date.now().toString(),
       timestamp: new Date().toISOString(),
       propertyType,
       ...currentFormData,
       ...result,
     };
     
-    // Add new deal to array
-    const updatedDeals = [newDeal, ...existingDeals];
-    
-    // Save back to localStorage
-    localStorage.setItem('savedDeals', JSON.stringify(updatedDeals));
-    
-    // Show success message
-    setSaveSuccess(true);
-    
-    // Check if CRM sync is enabled
-    if (accountData && 
-        accountData.preferredCRM !== "None" && 
-        accountData.crmAPIKey && 
-        accountData.syncAutomatically) {
+    try {
+      // Save deal to MongoDB via API
+      const response = await fetch('/api/deals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newDeal),
+      });
       
+      if (!response.ok) {
+        throw new Error(`Error saving deal: ${response.statusText}`);
+      }
+      
+      const savedDeal = await response.json();
+      
+      // Show success message
+      setSaveSuccess(true);
+      
+      // Check if CRM sync is enabled
+      if (accountData && 
+          accountData.preferredCRM !== "None" && 
+          accountData.crmAPIKey && 
+          accountData.syncAutomatically) {
+        
+        try {
+          // Sync deal to CRM
+          const syncResult = await syncDealToCRM(savedDeal, accountData);
+          setCrmSuccess(true);
+          
+          // Clear CRM success message after 5 seconds
+          setTimeout(() => {
+            setCrmSuccess(false);
+          }, 5000);
+        } catch (error) {
+          setCrmError(error.message || "Failed to sync with CRM");
+          
+          // Clear CRM error message after 5 seconds
+          setTimeout(() => {
+            setCrmError(null);
+          }, 5000);
+        }
+      }
+      
+      // Clear save success message after 3 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error("Error saving deal:", error);
+      
+      // Fall back to localStorage if API fails
       try {
-        // Sync deal to CRM
-        const syncResult = await syncDealToCRM(newDeal, accountData);
-        setCrmSuccess(true);
+        // Get existing saved deals
+        const existingDeals = localStorage.getItem('savedDeals') 
+          ? JSON.parse(localStorage.getItem('savedDeals')) 
+          : [];
         
-        // Clear CRM success message after 5 seconds
-        setTimeout(() => {
-          setCrmSuccess(false);
-        }, 5000);
-      } catch (error) {
-        setCrmError(error.message || "Failed to sync with CRM");
+        // Add ID for localStorage deals
+        newDeal.id = Date.now().toString();
         
-        // Clear CRM error message after 5 seconds
+        // Add to array
+        const updatedDeals = [newDeal, ...existingDeals];
+        
+        // Save to localStorage
+        localStorage.setItem('savedDeals', JSON.stringify(updatedDeals));
+        
+        // Show success message
+        setSaveSuccess(true);
+        
+        // Clear save success message after 3 seconds
         setTimeout(() => {
-          setCrmError(null);
-        }, 5000);
+          setSaveSuccess(false);
+        }, 3000);
+      } catch (localError) {
+        console.error("Local storage fallback failed:", localError);
+        alert("Failed to save deal. Please try again.");
       }
     }
-    
-    // Clear save success message after 3 seconds
-    setTimeout(() => {
-      setSaveSuccess(false);
-    }, 3000);
   };
 
   // Render property form based on selected type

@@ -1,7 +1,11 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
+import clientPromise from "../../../lib/mongodb";
+import { getUserByEmail, verifyPassword } from "../../../lib/auth";
 
 export default NextAuth({
+  adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -10,11 +14,39 @@ export default NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const { email, password } = credentials;
-        if (email === "test@example.com" && password === "password123") {
-          return { id: "1", email };
+        if (!credentials) {
+          return null;
         }
-        return null;
+
+        const { email, password } = credentials;
+        
+        try {
+          // Fetch the user from MongoDB
+          const user = await getUserByEmail(email);
+          
+          if (!user) {
+            console.log(`No user found with email: ${email}`);
+            return null;
+          }
+          
+          // Verify the password
+          const isValid = await verifyPassword(password, user.password);
+          
+          if (!isValid) {
+            console.log('Invalid password');
+            return null;
+          }
+          
+          // Return a user object excluding the password
+          return { 
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name || '',
+          };
+        } catch (error) {
+          console.error('Error in authorize:', error);
+          throw new Error('Authentication failed');
+        }
       },
     }),
   ],
@@ -23,16 +55,26 @@ export default NextAuth({
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        token.name = user.name;
+      }
       return token;
     },
     async session({ session, token }) {
-      session.user.id = token.id;
+      if (token) {
+        session.user.id = token.id;
+        if (token.name) {
+          session.user.name = token.name;
+        }
+      }
       return session;
     },
   },
   pages: {
     signIn: "/login",
+    error: "/login", // Error code passed in query string as ?error=
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "a-strong-secret-for-development-only",
+  debug: process.env.NODE_ENV === 'development',
 });
