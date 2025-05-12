@@ -1,11 +1,9 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
-import clientPromise from '../../../lib/mongodb';
-import { getUserByEmail, verifyPassword } from '../../../lib/auth';
+// Removed MongoDB adapter dependency temporarily
 
 export default NextAuth({
-  adapter: MongoDBAdapter(clientPromise),
+  // Removed MongoDB adapter temporarily
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -14,31 +12,24 @@ export default NextAuth({
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
+        // TEMPORARY: Mock authorization that allows any login
+        // This will be replaced with actual MongoDB authentication later
+        
         if (!credentials) {
           return null;
         }
         
-        // Look up the user with the provided email
-        const user = await getUserByEmail(credentials.email);
-        
-        // If no user found, return null
-        if (!user) {
+        // For development preview, accept any credentials with minimal validation
+        if (!credentials.email || !credentials.email.includes('@') || !credentials.password) {
+          console.log('Invalid login attempt - basic validation failed');
           return null;
         }
-        
-        // Verify the password
-        const isValid = await verifyPassword(credentials.password, user.password);
-        
-        // If password doesn't match, return null
-        if (!isValid) {
-          return null;
-        }
-        
-        // Return the user object (without the password)
+
+        // Return a mock user for development
         return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
+          id: '1',
+          email: credentials.email,
+          name: 'Demo User',
         };
       }
     }),
@@ -67,4 +58,6 @@ export default NextAuth({
   pages: {
     signIn: '/login',
   },
+  // Enable debug mode to help troubleshoot issues
+  debug: process.env.NODE_ENV === 'development',
 });
