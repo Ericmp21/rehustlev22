@@ -106,55 +106,214 @@ export default function SavedDeals({ user }) {
                 </div>
                 
                 <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                    <div>
-                      <p className="text-sm text-gray-400">Purchase Price</p>
-                      <p className="font-bold">${deal.purchasePrice.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Market Value</p>
-                      <p className="font-bold">${deal.marketValue.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Recommended Offer</p>
-                      <p className="font-bold">${deal.recommendedOffer}</p>
-                    </div>
+                  {/* Property type badge */}
+                  <div className="mb-4">
+                    <span className="inline-block bg-blue-900/40 text-blue-300 border border-blue-700 text-xs px-2 py-1 rounded-full">
+                      {deal.propertyType || "Land"}
+                    </span>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                    <div>
-                      <p className="text-sm text-gray-400">Risk Level</p>
-                      <p className={`font-bold ${
-                        deal.riskLevel === 'Green' ? 'text-green-400' : 
-                        deal.riskLevel === 'Yellow' ? 'text-yellow-400' : 'text-red-400'
-                      }`}>{deal.riskLevel}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Exit Strategy</p>
-                      <p className="font-bold">{deal.exitStrategy}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Seller Motivation</p>
-                      <p className="font-bold">{deal.sellerMotivation}</p>
-                    </div>
-                  </div>
-                  
-                  {(deal.notes || deal.zoningNotes) && (
-                    <div className="mt-4 pt-4 border-t border-gray-700">
-                      {deal.notes && (
-                        <div className="mb-3">
-                          <p className="text-sm text-gray-400 font-medium">Notes</p>
-                          <p className="text-gray-300">{deal.notes}</p>
-                        </div>
-                      )}
-                      
-                      {deal.zoningNotes && (
+                  {/* Display different fields based on property type */}
+                  {(!deal.propertyType || deal.propertyType === "Land") && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                         <div>
-                          <p className="text-sm text-gray-400 font-medium">Zoning Notes</p>
-                          <p className="text-gray-300">{deal.zoningNotes}</p>
+                          <p className="text-sm text-gray-400">Purchase Price</p>
+                          <p className="font-bold">${parseFloat(deal.purchase_price || deal.purchasePrice).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Market Value</p>
+                          <p className="font-bold">${parseFloat(deal.market_value || deal.marketValue).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Recommended Offer</p>
+                          <p className="font-bold">${deal.recommendedOffer}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Risk Level</p>
+                          <p className={`font-bold ${
+                            deal.riskLevel === 'Green' ? 'text-green-400' : 
+                            deal.riskLevel === 'Yellow' ? 'text-yellow-400' : 'text-red-400'
+                          }`}>{deal.riskLevel}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Exit Strategy</p>
+                          <p className="font-bold">{deal.exitStrategy}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Seller Motivation</p>
+                          <p className="font-bold">{deal.seller_motivation || deal.sellerMotivation}</p>
+                        </div>
+                      </div>
+                      
+                      {((deal.additional_notes || deal.notes) || (deal.zoning_notes || deal.zoningNotes)) && (
+                        <div className="mt-4 pt-4 border-t border-gray-700">
+                          {(deal.additional_notes || deal.notes) && (
+                            <div className="mb-3">
+                              <p className="text-sm text-gray-400 font-medium">Notes</p>
+                              <p className="text-gray-300">{deal.additional_notes || deal.notes}</p>
+                            </div>
+                          )}
+                          
+                          {(deal.zoning_notes || deal.zoningNotes) && (
+                            <div>
+                              <p className="text-sm text-gray-400 font-medium">Zoning Notes</p>
+                              <p className="text-gray-300">{deal.zoning_notes || deal.zoningNotes}</p>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
+                    </>
+                  )}
+                  
+                  {deal.propertyType === "Residential" && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                        <div>
+                          <p className="text-sm text-gray-400">ARV</p>
+                          <p className="font-bold">${parseFloat(deal.arv).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Repair Costs</p>
+                          <p className="font-bold">${parseFloat(deal.repair_costs).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Recommended Offer</p>
+                          <p className="font-bold">${deal.recommendedOffer}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Risk Level</p>
+                          <p className={`font-bold ${
+                            deal.riskLevel === 'Green' ? 'text-green-400' : 
+                            deal.riskLevel === 'Yellow' ? 'text-yellow-400' : 'text-red-400'
+                          }`}>{deal.riskLevel}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Exit Strategy</p>
+                          <p className="font-bold">{deal.exitStrategy}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Distress Signals</p>
+                          <p className="font-bold">{deal.distress_signals || "None"}</p>
+                        </div>
+                      </div>
+                      
+                      {deal.additional_notes && (
+                        <div className="mt-4 pt-4 border-t border-gray-700">
+                          <div className="mb-3">
+                            <p className="text-sm text-gray-400 font-medium">Notes</p>
+                            <p className="text-gray-300">{deal.additional_notes}</p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  
+                  {deal.propertyType === "Multi-Family" && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Units</p>
+                          <p className="font-bold">{deal.unit_count}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Monthly Rent</p>
+                          <p className="font-bold">${parseFloat(deal.monthly_rent_roll).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Expenses</p>
+                          <p className="font-bold">${parseFloat(deal.expenses).toLocaleString()}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Risk Level</p>
+                          <p className={`font-bold ${
+                            deal.riskLevel === 'Green' ? 'text-green-400' : 
+                            deal.riskLevel === 'Yellow' ? 'text-yellow-400' : 'text-red-400'
+                          }`}>{deal.riskLevel}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Exit Strategy</p>
+                          <p className="font-bold">{deal.exitStrategy}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Recommended Offer</p>
+                          <p className="font-bold">${deal.recommendedOffer}</p>
+                        </div>
+                      </div>
+                      
+                      {deal.additional_notes && (
+                        <div className="mt-4 pt-4 border-t border-gray-700">
+                          <div className="mb-3">
+                            <p className="text-sm text-gray-400 font-medium">Notes</p>
+                            <p className="text-gray-300">{deal.additional_notes}</p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  
+                  {deal.propertyType === "Commercial" && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                        <div>
+                          <p className="text-sm text-gray-400">NOI</p>
+                          <p className="font-bold">${parseFloat(deal.noi).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Cap Rate</p>
+                          <p className="font-bold">{deal.market_cap_rate}%</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Recommended Offer</p>
+                          <p className="font-bold">${deal.recommendedOffer}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Risk Level</p>
+                          <p className={`font-bold ${
+                            deal.riskLevel === 'Green' ? 'text-green-400' : 
+                            deal.riskLevel === 'Yellow' ? 'text-yellow-400' : 'text-red-400'
+                          }`}>{deal.riskLevel}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Exit Strategy</p>
+                          <p className="font-bold">{deal.exitStrategy}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Vacancy Rate</p>
+                          <p className="font-bold">{deal.vacancy_rate}%</p>
+                        </div>
+                      </div>
+                      
+                      {(deal.additional_notes || deal.lease_terms) && (
+                        <div className="mt-4 pt-4 border-t border-gray-700">
+                          {deal.lease_terms && (
+                            <div className="mb-3">
+                              <p className="text-sm text-gray-400 font-medium">Lease Terms</p>
+                              <p className="text-gray-300">{deal.lease_terms}</p>
+                            </div>
+                          )}
+                          
+                          {deal.additional_notes && (
+                            <div className="mb-3">
+                              <p className="text-sm text-gray-400 font-medium">Notes</p>
+                              <p className="text-gray-300">{deal.additional_notes}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                   
                   <div className="mt-4 pt-4 border-t border-gray-700 flex justify-end">

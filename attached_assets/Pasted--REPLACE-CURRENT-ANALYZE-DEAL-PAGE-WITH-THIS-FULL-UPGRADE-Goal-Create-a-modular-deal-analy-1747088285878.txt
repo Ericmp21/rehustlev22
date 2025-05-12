@@ -1,0 +1,98 @@
+🚨 REPLACE CURRENT ANALYZE-DEAL PAGE WITH THIS FULL UPGRADE:
+
+📌 Goal: Create a modular deal analyzer for RE Hustle V2 that lets users select property type (Land, Residential, Multi-Family, Commercial) and displays dynamic form fields and scoring logic per type. Cap Sniper Score at 100. Use Tailwind styling, save deals to localStorage, and maintain consistent UI and navigation.
+
+✅ Tech Requirements:
+- Use React + Next.js with Tailwind CSS
+- Modular forms: one for each property type
+- Sniper Score must always be between 0–100
+- Keep "Save Deal" and "View Saved Deals" integration working
+- Use dropdown or tab switcher to choose property type
+- Save address, notes, score, and other results to localStorage with timestamp
+
+✅ UI Components:
+- Property type selector (dropdown or tabs)
+- Dynamic form area (fields change per property type)
+- “Calculate Sniper Score” button
+- Result summary card with:
+  - Score (0–100)
+  - Risk Level (Green, Yellow, Red)
+  - Recommended Offer
+  - Exit Strategy
+- “Save Deal” button (should store property type + all data)
+
+✅ Property Type Fields:
+
+🟩 LAND:
+- purchase_price
+- market_value
+- seller_motivation (Hot, Warm, Cold)
+- road_access (Yes/No)
+- utilities (Yes/No)
+- zoning_notes
+- additional_notes
+- address
+
+🟦 RESIDENTIAL:
+- arv
+- repair_costs
+- comps (simple string for now)
+- distress_signals (tax lien, code violation, etc)
+- days_on_market
+- neighborhood_score (slider or dropdown)
+- additional_notes
+- address
+
+🟨 MULTI-FAMILY:
+- unit_count
+- monthly_rent_roll
+- expenses
+- cap_rate
+- vacancy_rate
+- stabilization_time (months)
+- address
+- additional_notes
+
+🟥 COMMERCIAL:
+- lease_terms (textarea)
+- vacancy_rate
+- location_score
+- noi
+- market_cap_rate
+- address
+- additional_notes
+
+✅ Scoring Logic per Type:
+
+LAND:
+- Profit Margin = ((Market Value - Purchase Price) / Market Value) * 100
+- Adjustments:
+  - Seller Motivation: +0–15
+  - Road Access: +10 or -15
+  - Utilities: +10 or -10
+  - Entitlement Feasibility: +0–15 (can skip for now)
+  - Environmental Risk: -0–20
+- Cap at 100, min at 0
+
+RESIDENTIAL:
+- MAO = ARV * 0.7 - Repairs
+- Score:
+  - ARV Margin: ((ARV - Repairs - Purchase Price) / ARV) * 100
+  - DOM: -0–10
+  - Distress Signals: +0–15
+  - Neighborhood Score: +0–10
+
+MULTI-FAMILY:
+- Cash Flow = Rent - Expenses
+- NOI = Rent * 12 - Expenses
+- Value via Cap Rate = NOI / CapRate
+- Score based on Cash Flow, Vacancy Risk, Stabilization
+
+COMMERCIAL:
+- NOI / Cap Rate to get value
+- Vacancy, lease terms, location score = impact
+
+🧠 Final Note:
+Use clean modular components and Tailwind styling. Do not hardcode score ranges or static fields. All scores must be calculated live and stored with the rest of the deal data when “Save Deal” is clicked.
+
+READY FOR PRODUCTION – NO DUMMY LOGIC – MATCH EXISTING APP DESIGN + DARK THEME.
