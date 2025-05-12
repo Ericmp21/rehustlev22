@@ -1,0 +1,96 @@
+Create `pages/analyze-deal.js` with this fully styled deal analyzer form using Tailwind and Next.js. On submit, calculate a Sniper Score and recommended offer.
+
+Use this code:
+
+------------------------------------------------------------
+import { useState } from "react";
+
+export default function AnalyzeDeal() {
+  const [form, setForm] = useState({
+    purchasePrice: "",
+    marketValue: "",
+    sellerMotivation: "Neutral",
+    roadAccess: "Yes",
+    utilities: "Yes",
+    zoningNotes: "",
+  });
+
+  const [result, setResult] = useState(null);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const calculateScore = (data) => {
+    const { purchasePrice, marketValue, sellerMotivation, roadAccess, utilities } = data;
+    const baseScore = ((marketValue - purchasePrice) / marketValue) * 100;
+
+    let motivationBonus = 0;
+    if (sellerMotivation === "Hot") motivationBonus = 10;
+    else if (sellerMotivation === "Warm") motivationBonus = 5;
+
+    const roadPoints = roadAccess === "Yes" ? 10 : -10;
+    const utilityPoints = utilities === "Yes" ? 10 : -10;
+
+    const sniperScore = Math.round(baseScore + motivationBonus + roadPoints + utilityPoints);
+    const riskLevel =
+      sniperScore > 70 ? "Green" : sniperScore >= 40 ? "Yellow" : "Red";
+    const exitStrategy =
+      sniperScore > 70 ? "Flip" : sniperScore >= 40 ? "Hold or Wholesale" : "Pass";
+
+    return {
+      sniperScore,
+      recommendedOffer: (marketValue * 0.7).toFixed(2),
+      riskLevel,
+      exitStrategy,
+    };
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const parsedForm = {
+      ...form,
+      purchasePrice: parseFloat(form.purchasePrice),
+      marketValue: parseFloat(form.marketValue),
+    };
+    setResult(calculateScore(parsedForm));
+  };
+
+  return (
+    <div className="bg-gray-900 text-white min-h-screen p-6">
+      <h1 className="text-2xl font-bold mb-4">Analyze New Land Deal</h1>
+      <form onSubmit={handleSubmit} className="grid gap-4 max-w-lg">
+        <input name="purchasePrice" type="number" placeholder="Purchase Price ($)" onChange={handleChange} className="p-2 rounded text-black" required />
+        <input name="marketValue" type="number" placeholder="Market Value ($)" onChange={handleChange} className="p-2 rounded text-black" required />
+        <select name="sellerMotivation" onChange={handleChange} className="p-2 rounded text-black">
+          <option>Hot</option>
+          <option>Warm</option>
+          <option>Neutral</option>
+        </select>
+        <select name="roadAccess" onChange={handleChange} className="p-2 rounded text-black">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+        <select name="utilities" onChange={handleChange} className="p-2 rounded text-black">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+        <textarea name="zoningNotes" placeholder="Zoning Notes" onChange={handleChange} className="p-2 rounded text-black" />
+        <button type="submit" className="bg-green-500 p-2 rounded text-black font-bold hover:bg-green-400">Calculate Score</button>
+      </form>
+
+      {result && (
+        <div className="mt-6 bg-gray-800 p-4 rounded">
+          <p><strong>Sniper Score:</strong> {result.sniperScore}</p>
+          <p><strong>Recommended Offer:</strong> ${result.recommendedOffer}</p>
+          <p><strong>Risk Level:</strong> {result.riskLevel}</p>
+          <p><strong>Exit Strategy:</strong> {result.exitStrategy}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+------------------------------------------------------------
+
+✅ Save this file as `pages/analyze-deal.js`  
+✅ Ensure only logged-in users can access it (reuse auth check if needed)
