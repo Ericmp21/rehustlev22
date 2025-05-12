@@ -52,6 +52,11 @@ export default function SavedDeals({ user }) {
                     Saved Deals
                   </Link>
                 </li>
+                <li>
+                  <Link href="/account" className="hover:text-green-400">
+                    Account
+                  </Link>
+                </li>
               </ul>
             </nav>
           </div>

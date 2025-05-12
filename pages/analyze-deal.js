@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { getSession, signOut } from "next-auth/react";
 import Head from "next/head";
 import Link from "next/link";
+import { syncDealToCRM } from "../lib/crmSync";
 
 // Property type options
 const PROPERTY_TYPES = {
@@ -501,6 +502,20 @@ export default function AnalyzeDeal({ user }) {
   
   const [result, setResult] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [crmSuccess, setCrmSuccess] = useState(false);
+  const [crmError, setCrmError] = useState(null);
+  const [accountData, setAccountData] = useState(null);
+
+  // Load account data from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedAccountData = localStorage.getItem('accountData') 
+        ? JSON.parse(localStorage.getItem('accountData')) 
+        : null;
+      
+      setAccountData(savedAccountData);
+    }
+  }, []);
 
   // Handle changes in form fields
   const handleChange = (e) => {
@@ -782,8 +797,13 @@ export default function AnalyzeDeal({ user }) {
     setResult(calculationResult);
   };
 
-  // Handle saving deal to localStorage
-  const saveDeal = () => {
+  // Handle saving deal to localStorage and sync to CRM if enabled
+  const saveDeal = async () => {
+    // Reset status messages
+    setSaveSuccess(false);
+    setCrmSuccess(false);
+    setCrmError(null);
+    
     // Get existing saved deals from localStorage
     const existingDeals = localStorage.getItem('savedDeals') 
       ? JSON.parse(localStorage.getItem('savedDeals')) 
@@ -810,7 +830,32 @@ export default function AnalyzeDeal({ user }) {
     // Show success message
     setSaveSuccess(true);
     
-    // Clear success message after 3 seconds
+    // Check if CRM sync is enabled
+    if (accountData && 
+        accountData.preferredCRM !== "None" && 
+        accountData.crmAPIKey && 
+        accountData.syncAutomatically) {
+      
+      try {
+        // Sync deal to CRM
+        const syncResult = await syncDealToCRM(newDeal, accountData);
+        setCrmSuccess(true);
+        
+        // Clear CRM success message after 5 seconds
+        setTimeout(() => {
+          setCrmSuccess(false);
+        }, 5000);
+      } catch (error) {
+        setCrmError(error.message || "Failed to sync with CRM");
+        
+        // Clear CRM error message after 5 seconds
+        setTimeout(() => {
+          setCrmError(null);
+        }, 5000);
+      }
+    }
+    
+    // Clear save success message after 3 seconds
     setTimeout(() => {
       setSaveSuccess(false);
     }, 3000);
@@ -959,6 +1004,24 @@ export default function AnalyzeDeal({ user }) {
                 {saveSuccess && (
                   <div className="mb-4 p-3 bg-green-900/50 border border-green-500 rounded-md text-green-400">
                     Deal saved successfully! View it in your <Link href="/saved-deals" className="underline">saved deals</Link>.
+                  </div>
+                )}
+                
+                {crmSuccess && (
+                  <div className="mb-4 p-3 bg-blue-900/50 border border-blue-500 rounded-md text-blue-400 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Deal synced to {accountData?.preferredCRM} successfully!
+                  </div>
+                )}
+                
+                {crmError && (
+                  <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-md text-red-400 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    CRM sync error: {crmError}
                   </div>
                 )}
                 
