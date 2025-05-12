@@ -1,0 +1,184 @@
+ RE HUSTLE V2 — Full Build Prompt (Use in Replit AI Agent)
+I want to build a SaaS app called RE Hustle V2 for real estate investors to analyze land, residential, multifamily, and commercial deals using a dynamic scoring system called the Sniper Score (0–100).
+
+🛠 Tech Stack (MANDATORY):
+Next.js only (do NOT use Vite or CRA)
+
+MongoDB Atlas (for data storage)
+
+NextAuth (for authentication)
+
+Tailwind CSS (for responsive UI)
+
+🔐 Authentication:
+Use NextAuth with email + password login
+
+Store sessions using MongoDB adapter
+
+Create a custom /login page (Tailwind styled) — do not use default NextAuth UI
+
+Include a signup toggle or redirect
+
+Redirect to /dashboard after login
+
+Protect /dashboard and all internal pages with session checks (getServerSideProps)
+
+User model must include:
+
+email
+
+plan (default to "free")
+
+customerId (null for now)
+
+🎨 UI Design:
+Use TailwindCSS
+
+Add a dark mode toggle
+
+Use bright, vibrant colors (especially green for buttons/CTAs)
+
+Layout should be modern, clean, responsive (like Notion/Stripe/Linear)
+
+📋 Universal Deal Fields:
+purchase_price
+
+market_value
+
+exit_strategy
+
+seller_motivation (desperate, motivated, neutral)
+
+holding_costs
+
+market_trend (upward, flat, downward)
+
+location_rating (optional)
+
+property_type (land, residential, multifamily, commercial)
+
+🧠 Universal Scoring Logic (0–100):
+Profit Margin: +0 to +30 → (Market Value – Price – Holding Costs) / Price
+
+Seller Motivation: +0 to +15
+
+Market Trend: +0 to +10
+
+Holding Costs: -0 to -15
+
+Exit Strategy Fit: +0 to +10
+
+🧱 LAND-SPECIFIC SCORING:
+Fields:
+
+zoning, access, utilities, entitlement_feasibility, environmental_risks, subdivision_potential
+
+Scoring:
+
+Zoning Flexibility: +0 to +10
+
+Access: +10 or -15
+
+Utilities: +10 or -10
+
+Entitlement Feasibility: +0 to +15
+
+Environmental Risks: -0 to -20
+
+Subdivision Potential: +0 to +10
+
+🏡 RESIDENTIAL-SPECIFIC SCORING:
+Fields:
+
+arv, repair_costs, comps, distress_signals, days_on_market, comps_alignment, neighborhood_score
+
+Scoring:
+
+ARV Margin: +0 to +25
+
+Repair Costs: -0 to -15
+
+Days on Market: -0 to -10
+
+Distress Signals: +0 to +15
+
+Comps Alignment: +0 to +10
+
+Neighborhood Score: +0 to +10
+
+🏢 MULTIFAMILY-SPECIFIC SCORING:
+Fields:
+
+unit_count, rent_roll, expenses, cap_rate, vacancy_rate, stabilization_time
+
+Scoring:
+
+Cash Flow: +0 to +20
+
+NOI vs. Cap Rate: +0 to +25
+
+Vacancy Risk: -0 to -10
+
+Stabilization Time: -0 to -10
+
+Rent Roll Consistency: +0 to +10
+
+Rent Growth Trend: +0 to +10
+
+🏬 COMMERCIAL-SPECIFIC SCORING:
+Fields:
+
+lease_terms, vacancy_rate, location_score, noi, market_cap_rate, use_flexibility
+
+Scoring:
+
+NOI vs. Purchase Price: +0 to +25
+
+Lease Term Stability: +0 to +20
+
+Tenant Quality: +0 to +15
+
+Vacancy Risk: -0 to -20
+
+Location Score: +0 to +10
+
+Use Flexibility: +0 to +10
+
+💾 Saving + Display:
+Store deals in MongoDB under each user
+
+Include property_type, sniper_score, risk_level, and recommended_offer
+
+Allow edit, delete, and notes for each deal
+
+Display deals in a table/list on the dashboard with color-coded risk level:
+
+Green = 70+
+
+Yellow = 40–69
+
+Red = below 40
+
+🧪 Deployment:
+Fully deployable to Vercel
+
+All config values must be in .env (MONGODB_URI, NEXTAUTH_SECRET)
+
+All code must be real logic, not placeholders
+
+File structure should include:
+
+pages/login.js
+
+pages/dashboard.js
+
+pages/api/scoreDeal.js
+
+lib/mongodb.js, lib/auth.js
+
+Any needed components/ (like DealForm, DealCard, etc.)
+
+🔒 Final Rule:
+❌ Do not use dummy logic, placeholder scoring, or fake inputs.
+✅ All logic must follow the provided scoring formulas exactly.
+✅ No Vite, no CRA, no generic boilerplate—this must be a clean, working Next.js SaaS project.
