@@ -45,20 +45,14 @@ export default function SavedDeals() {
                   <h1 className="text-xl font-bold text-gray-900 dark:text-white">RE Hustle</h1>
                 </div>
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                  <Link href="/dashboard">
-                    <a className="border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                      Dashboard
-                    </a>
+                  <Link href="/dashboard" className="border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Dashboard
                   </Link>
-                  <Link href="/analyze-deal">
-                    <a className="border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                      Analyze Deal
-                    </a>
+                  <Link href="/analyze-deal" className="border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Analyze Deal
                   </Link>
-                  <Link href="/saved-deals">
-                    <a className="border-green-500 text-gray-900 dark:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                      Saved Deals
-                    </a>
+                  <Link href="/saved-deals" className="border-green-500 text-gray-900 dark:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Saved Deals
                   </Link>
                 </div>
               </div>
@@ -115,8 +109,8 @@ export default function SavedDeals() {
                             </div>
                           </div>
                           <div className="mt-4 flex justify-between">
-                            <Link href={`/deal/${deal.id}`}>
-                              <a className="text-sm text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300">View Details</a>
+                            <Link href={`/deal/${deal.id}`} className="text-sm text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300">
+                              View Details
                             </Link>
                             <button
                               className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
@@ -142,8 +136,8 @@ export default function SavedDeals() {
                         <p>You haven't saved any deals yet. Analyze a deal and save it to see it here.</p>
                       </div>
                       <div className="mt-5">
-                        <Link href="/analyze-deal">
-                          <a className="btn-primary">Analyze a Deal</a>
+                        <Link href="/analyze-deal" className="btn-primary">
+                          Analyze a Deal
                         </Link>
                       </div>
                     </div>
