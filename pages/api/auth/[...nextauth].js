@@ -1,63 +1,45 @@
-import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-// Removed MongoDB adapter dependency temporarily
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import clientPromise from "../../../lib/mongodb";
+import { compare } from "bcryptjs";
 
 export default NextAuth({
-  // Removed MongoDB adapter temporarily
   providers: [
     CredentialsProvider({
-      name: 'Credentials',
+      name: "Credentials",
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // TEMPORARY: Mock authorization that allows any login
-        // This will be replaced with actual MongoDB authentication later
-        
-        if (!credentials) {
-          return null;
-        }
-        
-        // For development preview, accept any credentials with minimal validation
-        if (!credentials.email || !credentials.email.includes('@') || !credentials.password) {
-          console.log('Invalid login attempt - basic validation failed');
-          return null;
-        }
+        const client = await clientPromise;
+        const db = client.db();
+        const user = await db.collection("users").findOne({ email: credentials.email });
 
-        // Return a mock user for development
-        return {
-          id: '1',
-          email: credentials.email,
-          name: 'Demo User',
-        };
-      }
+        if (!user) throw new Error("No user found");
+
+        const isValid = await compare(credentials.password, user.password);
+        if (!isValid) throw new Error("Invalid password");
+
+        return { id: user._id.toString(), email: user.email };
+      },
     }),
   ],
   session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    strategy: "jwt",
   },
   callbacks: {
     async jwt({ token, user }) {
-      // Include user ID in the token if available
-      if (user) {
-        token.userId = user.id;
-      }
+      if (user) token.id = user.id;
       return token;
     },
     async session({ session, token }) {
-      // Include user ID in the session
-      if (token) {
-        session.user.id = token.userId;
-      }
+      session.user.id = token.id;
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: '/login',
+    signIn: "/login",
   },
-  // Enable debug mode to help troubleshoot issues
-  debug: process.env.NODE_ENV === 'development',
+  secret: process.env.NEXTAUTH_SECRET,
 });
