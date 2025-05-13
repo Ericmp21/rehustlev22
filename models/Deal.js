@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const DealSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  userId: { type: String, required: true },
   property_type: String,
   sniper_score: Number,
   risk_level: String,
