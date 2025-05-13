@@ -3,6 +3,7 @@ import { getSession, signOut } from "next-auth/react";
 import Head from "next/head";
 import Link from "next/link";
 import { syncDealToCRM } from "../lib/crmSync";
+import { requireAuthentication } from "../lib/auth";
 
 // Property type options
 const PROPERTY_TYPES = {
@@ -1107,21 +1108,9 @@ export default function AnalyzeDeal({ user }) {
   );
 }
 
-// Add authentication protection to this page
+// Add authentication protection with trial/subscription enforcement
 export async function getServerSideProps(context) {
-  const session = await getSession(context);
-  if (!session) {
-    return {
-      redirect: {
-        destination: "/login",
-        permanent: false,
-      },
-    };
-  }
-
-  return {
-    props: {
-      user: session.user,
-    },
-  };
+  // Use our enhanced authentication function that checks trial/subscription status
+  // This will automatically redirect to login or upgrade pages as needed
+  return await requireAuthentication(context);
 }

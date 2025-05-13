@@ -140,19 +140,7 @@ export default function Dashboard({ user }) {
 }
 
 export async function getServerSideProps(context) {
-  const session = await getSession(context);
-  if (!session) {
-    return {
-      redirect: {
-        destination: "/login",
-        permanent: false,
-      },
-    };
-  }
-
-  return {
-    props: {
-      user: session.user,
-    },
-  };
+  // Use our enhanced authentication function that checks trial/subscription status
+  // This will automatically redirect to login or upgrade pages as needed
+  return await requireAuthentication(context);
 }
