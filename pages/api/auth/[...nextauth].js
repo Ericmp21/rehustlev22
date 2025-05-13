@@ -9,7 +9,7 @@ import User from "../../../models/User";
 
 // Using Next.js with Mongoose for MongoDB connectivity
 // This avoids the 'dns' module error that occurs with the MongoDB adapter
-export default NextAuth({
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -147,4 +147,6 @@ export default NextAuth({
   },
   secret: process.env.NEXTAUTH_SECRET || "a-strong-secret-for-development-only",
   debug: process.env.NODE_ENV === 'development',
-});
+};
+
+export default NextAuth(authOptions);
