@@ -1,8 +1,11 @@
 import { getSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import Head from "next/head";
+import { requireAuthentication } from "../lib/auth";
 
 export default function Dashboard({ user }) {
+  // Determine if we need to show trial status
+  const showTrialStatus = !user.isSubscribed && user.trialActive && user.daysRemaining;
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Head>
@@ -52,7 +55,38 @@ export default function Dashboard({ user }) {
       </header>
       
       <main className="container mx-auto p-8">
-        <h2 className="text-2xl font-bold mb-6">Welcome to Your Dashboard</h2>
+        <h2 className="text-2xl font-bold mb-3">Welcome to Your Dashboard</h2>
+        
+        {/* Trial status banner */}
+        {showTrialStatus && (
+          <div className="bg-blue-900/40 border border-blue-500 rounded-lg p-4 mb-6 flex justify-between items-center">
+            <div>
+              <p className="text-blue-300 font-medium">
+                Free Trial - {user.daysRemaining} {user.daysRemaining === 1 ? 'day' : 'days'} remaining
+              </p>
+              <p className="text-gray-300 text-sm">
+                Your trial ends on {new Date(user.trialEndDate).toLocaleDateString()}
+              </p>
+            </div>
+            <Link href="/upgrade">
+              <span className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-medium cursor-pointer">
+                Upgrade Now
+              </span>
+            </Link>
+          </div>
+        )}
+        
+        {/* Subscription banner */}
+        {user.isSubscribed && (
+          <div className="bg-green-900/30 border border-green-500 rounded-lg p-4 mb-6">
+            <p className="text-green-300 font-medium">
+              Active Subscription - Professional Plan
+            </p>
+            <p className="text-gray-300 text-sm">
+              You have full access to all RE Hustle V2 features
+            </p>
+          </div>
+        )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
