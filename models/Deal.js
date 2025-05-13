@@ -4,7 +4,7 @@ const DealSchema = new mongoose.Schema({
   userId: {
     type: String,
     required: true,
-    index: true
+    index: true,
   },
   property_type: String,
   sniper_score: Number,
@@ -14,7 +14,7 @@ const DealSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
-// 🔥 Force refresh the model to override any ObjectId-based cache
+// 🔥 FORCE overwrite of cached Deal model
 delete mongoose.models.Deal;
 
 export default mongoose.model("Deal", DealSchema);
