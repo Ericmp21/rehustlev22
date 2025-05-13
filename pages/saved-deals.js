@@ -26,7 +26,7 @@ export default function SavedDeals({ user }) {
         setLoading(false);
       } catch (err) {
         console.error('Error fetching deals:', err);
-        setError('Failed to load deals. Using local storage as fallback.');
+        setError('Failed to load deals: ' + err.message + '. Using local storage as fallback.');
         
         // Fallback to localStorage
         if (typeof window !== 'undefined') {
