@@ -20,7 +20,8 @@ let mongoDbConnected = false;
 })();
 
 export default NextAuth({
-  ...(mongoDbConnected ? { adapter: MongoDBAdapter(clientPromise) } : {}),
+  // Always use the MongoDB adapter (it will fallback gracefully if connection fails)
+  adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -57,6 +58,7 @@ export default NextAuth({
             id: user._id.toString(),
             email: user.email,
             name: user.name || '',
+            userId: user._id.toString(), // Add userId to be consistent
           };
         } catch (error) {
           console.error('Error in authorize:', error);
@@ -72,6 +74,7 @@ export default NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.userId = user.id; // Ensure userId is in the token
         token.name = user.name;
       }
       return token;
@@ -79,6 +82,7 @@ export default NextAuth({
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id;
+        session.user.userId = token.id; // Add userId to session for consistency
         if (token.name) {
           session.user.name = token.name;
         }
@@ -89,6 +93,7 @@ export default NextAuth({
   pages: {
     signIn: "/login",
     error: "/login", // Error code passed in query string as ?error=
+    newUser: "/dashboard", // Redirect new users to dashboard
   },
   secret: process.env.NEXTAUTH_SECRET || "a-strong-secret-for-development-only",
   debug: process.env.NODE_ENV === 'development',
