@@ -1,7 +1,6 @@
 import { getSession } from 'next-auth/react';
 import dbConnect from '../../../lib/mongodb';
 import Deal from '../../../models/Deal';
-import mongoose from 'mongoose';
 
 export default async function handler(req, res) {
   const session = await getSession({ req });
@@ -36,13 +35,9 @@ export default async function handler(req, res) {
 // GET handler - Get all deals for a user
 async function handleGet(req, res, userId) {
   try {
-    // Convert string ID to MongoDB ObjectId
-    const objectId = mongoose.Types.ObjectId.isValid(userId) 
-      ? new mongoose.Types.ObjectId(userId)
-      : userId; // Fall back to string ID if not valid ObjectId
-    
+    // Use string userId directly without any casting
     // Query all deals for the user
-    const deals = await Deal.find({ userId: objectId })
+    const deals = await Deal.find({ userId: userId })
       .sort({ createdAt: -1 }) // Latest first
       .lean(); // Convert to plain JavaScript objects
     
@@ -62,15 +57,11 @@ async function handlePost(req, res, userId) {
       return res.status(400).json({ error: 'Invalid deal data' });
     }
     
-    // Convert string ID to MongoDB ObjectId
-    const objectId = mongoose.Types.ObjectId.isValid(userId) 
-      ? new mongoose.Types.ObjectId(userId)
-      : userId; // Fall back to string ID if not valid ObjectId
-    
+    // Use string userId directly without any casting
     // Create a new deal
     const deal = new Deal({
       ...dealData,
-      userId: objectId
+      userId: userId
     });
     
     // Save the deal

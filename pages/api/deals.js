@@ -14,9 +14,11 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
+    // Get the string userId directly without any casting
     const userId = session.user.id;
-
-    const deals = await Deal.find({ userId }).sort({ createdAt: -1 });
+    
+    // Use the string userId directly
+    const deals = await Deal.find({ userId: userId }).sort({ createdAt: -1 });
     return res.status(200).json(deals);
   } catch (error) {
     console.error("Server error in /api/deals:", error);

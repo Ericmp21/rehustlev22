@@ -1,7 +1,6 @@
 import { getSession } from 'next-auth/react';
 import dbConnect from '../../../lib/mongodb';
 import Deal from '../../../models/Deal';
-import mongoose from 'mongoose';
 
 export default async function handler(req, res) {
   const session = await getSession({ req });
@@ -11,7 +10,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'You must be signed in to access this endpoint' });
   }
   
-  // Extract user ID from session
+  // Extract user ID from session as a string
   const userId = session.user.id;
   
   // Get deal ID from URL
@@ -28,34 +27,14 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Database connection failed' });
   }
   
-  // Create MongoDB ObjectId safely
-  let dealId;
-  try {
-    // Check if ID is valid ObjectId format
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      dealId = new mongoose.Types.ObjectId(id);
-    } else {
-      // For other ID formats, use the string directly
-      dealId = id;
-    }
-  } catch (error) {
-    console.error('Invalid deal ID format:', error);
-    return res.status(400).json({ error: 'Invalid deal ID format' });
-  }
-  
-  // Convert user ID to ObjectId if valid
-  const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
-    ? new mongoose.Types.ObjectId(userId)
-    : userId;
-  
   // Handle different HTTP methods
   switch (req.method) {
     case 'GET':
-      return handleGet(req, res, dealId, userObjectId);
+      return handleGet(req, res, id, userId);
     case 'PUT':
-      return handlePut(req, res, dealId, userObjectId);
+      return handlePut(req, res, id, userId);
     case 'DELETE':
-      return handleDelete(req, res, dealId, userObjectId);
+      return handleDelete(req, res, id, userId);
     default:
       return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -65,7 +44,7 @@ export default async function handler(req, res) {
 async function handleGet(req, res, dealId, userId) {
   try {
     // Query for the deal, ensuring it belongs to the user
-    const deal = await Deal.findOne({ _id: dealId, userId }).lean();
+    const deal = await Deal.findOne({ _id: dealId, userId: userId }).lean();
     
     // Check if deal exists
     if (!deal) {
@@ -90,7 +69,7 @@ async function handlePut(req, res, dealId, userId) {
     
     // Update the deal and return the updated document
     const updatedDeal = await Deal.findOneAndUpdate(
-      { _id: dealId, userId },
+      { _id: dealId, userId: userId },
       { $set: updateData },
       { new: true } // Return the updated document
     ).lean();
@@ -111,7 +90,7 @@ async function handlePut(req, res, dealId, userId) {
 async function handleDelete(req, res, dealId, userId) {
   try {
     // Delete the deal
-    const result = await Deal.deleteOne({ _id: dealId, userId });
+    const result = await Deal.deleteOne({ _id: dealId, userId: userId });
     
     // Check if deal was found and deleted
     if (result.deletedCount === 0) {
