@@ -1,0 +1,124 @@
+🧠 Fix MongoDB “dns” Build Error in RE Hustle V2 (Next.js + Auth)
+
+My project uses:
+- Next.js + TailwindCSS
+- MongoDB Atlas (same URI stays the same)
+- NextAuth with email/password (JWT sessions)
+- Hosting on Replit
+
+❌ Current blocking issue:
+- Error: "Module not found: Can't resolve 'dns'" from `mongodb/lib/cmap/auth/gssapi.js`
+- Replit can't resolve Node core modules like `dns`
+- Login/register silently fail because MongoDB connection breaks
+
+✅ What I need:
+1. Uninstall native driver and use Mongoose instead
+npm uninstall mongodb
+npm install mongoose
+
+csharp
+Copy
+Edit
+
+2. Replace `lib/mongodb.js` with this:
+```js
+import mongoose from "mongoose";
+
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  throw new Error("Please define the MONGODB_URI");
+}
+
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function dbConnect() {
+  if (cached.conn) return cached.conn;
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      bufferCommands: false,
+    }).then((mongoose) => mongoose);
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
+
+export default dbConnect;
+In pages/api/auth/[...nextauth].js, stop using the MongoDBAdapter and connect using Mongoose like this:
+
+js
+Copy
+Edit
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User"; // create this model
+import { compare } from "bcrypt";
+
+export default NextAuth({
+  providers: [
+    CredentialsProvider({
+      async authorize(credentials) {
+        await dbConnect();
+        const user = await User.findOne({ email: credentials.email });
+        if (!user) throw new Error("No user found");
+        const isValid = await compare(credentials.password, user.password);
+        if (!isValid) throw new Error("Invalid password");
+        return user;
+      },
+    }),
+  ],
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+    newUser: "/dashboard",
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) token.id = user._id;
+      return token;
+    },
+    async session({ session, token }) {
+      session.user.id = token.id;
+      return session;
+    },
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+});
+Create models/User.js:
+
+js
+Copy
+Edit
+import mongoose from "mongoose";
+
+const UserSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: String,
+  trial_start_date: Date,
+  is_subscribed: { type: Boolean, default: false },
+  lifetime_access: { type: Boolean, default: false },
+});
+
+export default mongoose.models.User || mongoose.model("User", UserSchema);
+🎯 Success Criteria:
+
+App builds without DNS error
+
+MongoDB connects using Mongoose
+
+Login + Register pages redirect to /dashboard
+
+Session shows user ID
+
+Use my current MongoDB URI — no need to create a new database or cluster.
+
+yaml
+Copy
+Edit

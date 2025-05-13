@@ -1,21 +1,13 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
-import clientPromise from "../../../lib/mongodb";
+import dbConnect from "../../../lib/mongodb";
+import User from "../../../models/User";
+import bcryptjs, { compare } from "bcryptjs";
 import { getUserByEmail, verifyPassword, createUser } from "../../../lib/auth";
 
-// Let's simplify our approach and make NextAuth more resilient
-// We'll avoid complex setup that could throw errors
+// Using Next.js with Mongoose for MongoDB connectivity
+// This avoids the 'dns' module error that occurs with the MongoDB adapter
 export default NextAuth({
-  // Add adapter only if it's available in a try/catch
-  ...(() => {
-    try {
-      return { adapter: MongoDBAdapter(clientPromise) };
-    } catch (e) {
-      console.warn("MongoDB adapter initialization failed, falling back to JWT only");
-      return {}; // No adapter if MongoDB is unavailable
-    }
-  })(),
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -39,29 +31,35 @@ export default NextAuth({
         try {
           console.log(`Attempting to authorize: ${email}`);
           
+          // Connect to the database
+          await dbConnect();
+          
           // Try to create test user if they don't exist
           if (email === 'test@example.com' && password === 'password123') {
             try {
-              const existingUser = await getUserByEmail(email);
+              const existingUser = await User.findOne({ email });
               
               if (!existingUser) {
                 console.log('Creating test user since it does not exist');
-                const testUser = await createUser({
+                
+                // Create a new test user
+                const hashedPassword = await bcryptjs.hash(password, 12);
+                const newUser = await User.create({
                   email: 'test@example.com',
-                  password: 'password123', 
+                  password: hashedPassword,
                   name: 'Test User',
-                  trial_start_date: new Date().toISOString(),
+                  trial_start_date: new Date(),
                   is_subscribed: false
                 });
                 
-                console.log(`Test user created with ID: ${testUser.id}`);
+                console.log(`Test user created with ID: ${newUser._id}`);
                 
                 // Return the newly created test user
                 return {
-                  id: testUser.id,
-                  email: testUser.email,
-                  name: testUser.name,
-                  userId: testUser.id
+                  id: newUser._id.toString(),
+                  email: newUser.email,
+                  name: newUser.name,
+                  userId: newUser._id.toString()
                 };
               }
             } catch (e) {
@@ -69,8 +67,8 @@ export default NextAuth({
             }
           }
           
-          // Fetch the user from MongoDB/fallback storage
-          const user = await getUserByEmail(email);
+          // Find user in the database
+          const user = await User.findOne({ email });
           
           if (!user) {
             console.log(`No user found with email: ${email}`);
@@ -79,8 +77,21 @@ export default NextAuth({
           
           console.log(`User found: ${user.email}, ID: ${user._id}, verifying password`);
           
+          // Special case for unencrypted test user password
+          if (password === 'password123' && email === 'test@example.com' && 
+              user.password === 'password123') {
+            console.log('Using special case for test user password');
+            
+            return { 
+              id: user._id.toString(),
+              email: user.email,
+              name: user.name || '',
+              userId: user._id.toString()
+            };
+          }
+          
           // Verify the password
-          const isValid = await verifyPassword(password, user.password);
+          const isValid = await compare(password, user.password);
           
           if (!isValid) {
             console.log('Invalid password');
@@ -89,15 +100,12 @@ export default NextAuth({
           
           console.log('Password verified successfully');
           
-          // Convert ID to string if it's an object
-          const userId = typeof user._id === 'object' ? user._id.toString() : user._id;
-          
           // Return a user object excluding the password
           return { 
-            id: userId,
+            id: user._id.toString(),
             email: user.email,
             name: user.name || '',
-            userId: userId
+            userId: user._id.toString()
           };
         } catch (error) {
           console.error('Error in authorize:', error);
