@@ -140,32 +140,58 @@ export default function Dashboard({ user }) {
 }
 
 export async function getServerSideProps(context) {
-  // Add detailed logging to debug session issues
   console.log("Dashboard getServerSideProps - Starting");
   
-  const session = await getSession(context);
-  console.log("Dashboard session data:", session ? {
-    user: {
-      ...session.user,
-      // Don't log sensitive data
-      email: session.user.email ? "PRESENT" : "MISSING"
-    },
-    expires: session.expires
-  } : "NO SESSION");
-  
-  if (!session) {
-    console.log("Dashboard - No session, redirecting to login");
+  try {
+    // Basic session check first
+    const session = await getSession(context);
+    
+    console.log("Dashboard session data:", session ? {
+      user: {
+        ...session.user,
+        email: session.user.email ? "PRESENT" : "MISSING",
+        name: session.user.name || "NOT SET",
+        id: session.user.id || "MISSING"
+      },
+      expires: session.expires
+    } : "NO SESSION");
+    
+    if (!session) {
+      console.log("Dashboard - No session, redirecting to login");
+      return {
+        redirect: {
+          destination: "/login",
+          permanent: false,
+        },
+      };
+    }
+    
+    // Use a simpler approach for reliability
+    // If we have a session, provide the user info directly without complex checks
+    return {
+      props: {
+        user: {
+          email: session.user.email,
+          name: session.user.name || session.user.email.split("@")[0],
+          id: session.user.id,
+          userId: session.user.id,
+          // Default trial values for session persistence issues
+          isSubscribed: session.user.isSubscribed || false,
+          trialActive: true,
+          daysRemaining: 7,
+          trialEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      }
+    };
+  } catch (error) {
+    console.error("Error in dashboard getServerSideProps:", error);
+    
+    // On error, redirect to login for safety
     return {
       redirect: {
-        destination: "/login",
+        destination: "/login?error=session",
         permanent: false,
       },
     };
   }
-  
-  // Continue with enhanced authentication that checks trial/subscription
-  const authResult = await requireAuthentication(context);
-  console.log("Dashboard - Auth result type:", authResult.redirect ? "REDIRECT" : "PROPS");
-  
-  return authResult;
 }

@@ -35,7 +35,18 @@ export default function Login() {
 
       if (res?.error) {
         console.error("Login error:", res.error);
-        setError("Invalid login. Please try again.");
+        
+        // Show more specific error messages based on the error code
+        if (res.error === "CredentialsSignin") {
+          setError("Invalid email or password. Please try again.");
+        } else {
+          setError("Login failed: " + res.error);
+        }
+        
+        // Also display error in an alert for debugging
+        alert("Login failed: " + res.error + 
+              "\n\nTry the test user: test@example.com / password123" + 
+              "\n\nIf that fails, check console logs for more details.");
       } else {
         // Use a forced page reload to ensure the session is properly loaded
         window.location.href = "/dashboard";
