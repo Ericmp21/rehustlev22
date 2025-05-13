@@ -1,9 +1,11 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import dbConnect from "../../../lib/mongodb";
-import User from "../../../models/User";
 import bcryptjs, { compare } from "bcryptjs";
 import { getUserByEmail, verifyPassword, createUser } from "../../../lib/auth";
+
+// Server-side import
+import User from "../../../models/User";
 
 // Using Next.js with Mongoose for MongoDB connectivity
 // This avoids the 'dns' module error that occurs with the MongoDB adapter
