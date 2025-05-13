@@ -4,10 +4,7 @@ const DealSchema = new mongoose.Schema({
   userId: {
     type: String,
     required: true,
-    validate: {
-      validator: v => typeof v === "string",
-      message: props => `${props.value} is not a valid string userId!`
-    }
+    index: true
   },
   property_type: String,
   sniper_score: Number,
@@ -17,4 +14,7 @@ const DealSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
-export default mongoose.models.Deal || mongoose.model("Deal", DealSchema);
+// 🔥 Force refresh the model to override any ObjectId-based cache
+delete mongoose.models.Deal;
+
+export default mongoose.model("Deal", DealSchema);
