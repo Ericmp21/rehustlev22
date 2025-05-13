@@ -1,0 +1,13 @@
+import mongoose from "mongoose";
+
+const DealSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  property_type: String,
+  sniper_score: Number,
+  risk_level: String,
+  recommended_offer: Number,
+  notes: String,
+  createdAt: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+export default mongoose.models.Deal || mongoose.model("Deal", DealSchema);

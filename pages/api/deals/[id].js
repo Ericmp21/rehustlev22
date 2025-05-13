@@ -1,6 +1,7 @@
 import { getSession } from 'next-auth/react';
-import { getDatabase } from '../../../lib/mongodb';
-import { ObjectId } from 'mongodb';
+import dbConnect from '../../../lib/mongodb';
+import Deal from '../../../models/Deal';
+import mongoose from 'mongoose';
 
 export default async function handler(req, res) {
   const session = await getSession({ req });
@@ -19,10 +20,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Deal ID is required' });
   }
   
-  // Get database connection
-  let db;
+  // Connect to the database
   try {
-    db = await getDatabase();
+    await dbConnect();
   } catch (error) {
     console.error('Database connection error:', error);
     return res.status(500).json({ error: 'Database connection failed' });
@@ -31,11 +31,11 @@ export default async function handler(req, res) {
   // Create MongoDB ObjectId safely
   let dealId;
   try {
-    // Check if ID is already in ObjectId format (from MongoDB)
-    if (ObjectId.isValid(id)) {
-      dealId = new ObjectId(id);
+    // Check if ID is valid ObjectId format
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      dealId = new mongoose.Types.ObjectId(id);
     } else {
-      // For localStorage fallback IDs, use the string directly
+      // For other ID formats, use the string directly
       dealId = id;
     }
   } catch (error) {
@@ -43,33 +43,29 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid deal ID format' });
   }
   
+  // Convert user ID to ObjectId if valid
+  const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+    ? new mongoose.Types.ObjectId(userId)
+    : userId;
+  
   // Handle different HTTP methods
   switch (req.method) {
     case 'GET':
-      return handleGet(req, res, db, dealId, userId);
+      return handleGet(req, res, dealId, userObjectId);
     case 'PUT':
-      return handlePut(req, res, db, dealId, userId);
+      return handlePut(req, res, dealId, userObjectId);
     case 'DELETE':
-      return handleDelete(req, res, db, dealId, userId);
+      return handleDelete(req, res, dealId, userObjectId);
     default:
       return res.status(405).json({ error: 'Method not allowed' });
   }
 }
 
 // GET handler - Get a specific deal
-async function handleGet(req, res, db, dealId, userId) {
+async function handleGet(req, res, dealId, userId) {
   try {
     // Query for the deal, ensuring it belongs to the user
-    let query = {};
-    
-    // Construct the query based on ID type
-    if (typeof dealId === 'string') {
-      query = { _id: dealId, userId };
-    } else {
-      query = { _id: dealId, userId };
-    }
-    
-    const deal = await db.collection('deals').findOne(query);
+    const deal = await Deal.findOne({ _id: dealId, userId }).lean();
     
     // Check if deal exists
     if (!deal) {
@@ -84,7 +80,7 @@ async function handleGet(req, res, db, dealId, userId) {
 }
 
 // PUT handler - Update a deal
-async function handlePut(req, res, db, dealId, userId) {
+async function handlePut(req, res, dealId, userId) {
   try {
     // Validate request body
     const updateData = req.body;
@@ -92,34 +88,19 @@ async function handlePut(req, res, db, dealId, userId) {
       return res.status(400).json({ error: 'Invalid update data' });
     }
     
-    // Construct query based on ID type
-    let query = {};
-    if (typeof dealId === 'string') {
-      query = { _id: dealId, userId };
-    } else {
-      query = { _id: dealId, userId };
-    }
-    
-    // Update the deal
-    const result = await db.collection('deals').findOneAndUpdate(
-      query,
-      { 
-        $set: {
-          ...updateData,
-          updatedAt: new Date()
-        } 
-      },
-      { 
-        returnDocument: 'after'
-      }
-    );
+    // Update the deal and return the updated document
+    const updatedDeal = await Deal.findOneAndUpdate(
+      { _id: dealId, userId },
+      { $set: updateData },
+      { new: true } // Return the updated document
+    ).lean();
     
     // Check if deal was found and updated
-    if (!result.value) {
+    if (!updatedDeal) {
       return res.status(404).json({ error: 'Deal not found or not authorized' });
     }
     
-    return res.status(200).json(result.value);
+    return res.status(200).json(updatedDeal);
   } catch (error) {
     console.error('Error updating deal:', error);
     return res.status(500).json({ error: 'Failed to update deal' });
@@ -127,18 +108,10 @@ async function handlePut(req, res, db, dealId, userId) {
 }
 
 // DELETE handler - Delete a deal
-async function handleDelete(req, res, db, dealId, userId) {
+async function handleDelete(req, res, dealId, userId) {
   try {
-    // Construct query based on ID type
-    let query = {};
-    if (typeof dealId === 'string') {
-      query = { _id: dealId, userId };
-    } else {
-      query = { _id: dealId, userId };
-    }
-    
     // Delete the deal
-    const result = await db.collection('deals').deleteOne(query);
+    const result = await Deal.deleteOne({ _id: dealId, userId });
     
     // Check if deal was found and deleted
     if (result.deletedCount === 0) {

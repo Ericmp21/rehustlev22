@@ -1,5 +1,7 @@
 import { getSession } from 'next-auth/react';
-import { getDatabase } from '../../../lib/mongodb';
+import dbConnect from '../../../lib/mongodb';
+import Deal from '../../../models/Deal';
+import mongoose from 'mongoose';
 
 export default async function handler(req, res) {
   const session = await getSession({ req });
@@ -12,10 +14,9 @@ export default async function handler(req, res) {
   // Extract user ID from session
   const userId = session.user.id;
   
-  // Get database connection
-  let db;
+  // Connect to the database
   try {
-    db = await getDatabase();
+    await dbConnect();
   } catch (error) {
     console.error('Database connection error:', error);
     return res.status(500).json({ error: 'Database connection failed' });
@@ -24,22 +25,26 @@ export default async function handler(req, res) {
   // Handle different HTTP methods
   switch (req.method) {
     case 'GET':
-      return handleGet(req, res, db, userId);
+      return handleGet(req, res, userId);
     case 'POST':
-      return handlePost(req, res, db, userId);
+      return handlePost(req, res, userId);
     default:
       return res.status(405).json({ error: 'Method not allowed' });
   }
 }
 
 // GET handler - Get all deals for a user
-async function handleGet(req, res, db, userId) {
+async function handleGet(req, res, userId) {
   try {
+    // Convert string ID to MongoDB ObjectId
+    const objectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? new mongoose.Types.ObjectId(userId)
+      : userId; // Fall back to string ID if not valid ObjectId
+    
     // Query all deals for the user
-    const deals = await db.collection('deals')
-      .find({ userId })
+    const deals = await Deal.find({ userId: objectId })
       .sort({ createdAt: -1 }) // Latest first
-      .toArray();
+      .lean(); // Convert to plain JavaScript objects
     
     return res.status(200).json(deals);
   } catch (error) {
@@ -49,7 +54,7 @@ async function handleGet(req, res, db, userId) {
 }
 
 // POST handler - Create a new deal
-async function handlePost(req, res, db, userId) {
+async function handlePost(req, res, userId) {
   try {
     // Validate request body
     const dealData = req.body;
@@ -57,22 +62,22 @@ async function handlePost(req, res, db, userId) {
       return res.status(400).json({ error: 'Invalid deal data' });
     }
     
-    // Add metadata
-    const deal = {
+    // Convert string ID to MongoDB ObjectId
+    const objectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? new mongoose.Types.ObjectId(userId)
+      : userId; // Fall back to string ID if not valid ObjectId
+    
+    // Create a new deal
+    const deal = new Deal({
       ...dealData,
-      userId,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    // Insert the deal
-    const result = await db.collection('deals').insertOne(deal);
-    
-    // Return the inserted deal with its ID
-    return res.status(201).json({
-      ...deal,
-      _id: result.insertedId
+      userId: objectId
     });
+    
+    // Save the deal
+    const savedDeal = await deal.save();
+    
+    // Return the saved deal
+    return res.status(201).json(savedDeal);
   } catch (error) {
     console.error('Error creating deal:', error);
     return res.status(500).json({ error: 'Failed to create deal' });
