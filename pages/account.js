@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { getSession, signOut } from "next-auth/react";
 import Head from "next/head";
 import Link from "next/link";
+import { requireAuthentication } from "../lib/auth";
 
 export default function Account({ user }) {
   const [accountData, setAccountData] = useState({

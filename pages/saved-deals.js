@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { getSession, signOut } from "next-auth/react";
 import Head from "next/head";
 import Link from "next/link";
+import { requireAuthentication } from "../lib/auth";
 
 export default function SavedDeals({ user }) {
   const [deals, setDeals] = useState([]);
@@ -393,16 +394,7 @@ export default function SavedDeals({ user }) {
 }
 
 export async function getServerSideProps(context) {
-  const session = await getSession(context);
-  if (!session) {
-    return {
-      redirect: { destination: "/login", permanent: false },
-    };
-  }
-
-  return {
-    props: { 
-      user: session.user,
-    },
-  };
+  // Use our enhanced authentication function that checks trial/subscription status
+  // This will automatically redirect to login or upgrade pages as needed
+  return await requireAuthentication(context);
 }
