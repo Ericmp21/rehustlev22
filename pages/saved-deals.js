@@ -16,6 +16,8 @@ export default function SavedDeals({ user }) {
         const response = await fetch('/api/deals');
         
         if (!response.ok) {
+          const errMsg = await response.json();
+          console.error("Full API error:", errMsg);
           throw new Error(`Error fetching deals: ${response.statusText}`);
         }
         

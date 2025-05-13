@@ -6,6 +6,6 @@
   "/analyze-deal": "pages/analyze-deal.js",
   "/saved-deals": "pages/saved-deals.js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/login": "pages/login.js",
-  "/api/deals": "pages/api/deals.js"
+  "/api/deals": "pages/api/deals.js",
+  "/login": "pages/login.js"
 }

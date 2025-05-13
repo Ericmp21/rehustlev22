@@ -8,20 +8,21 @@ export default async function handler(req, res) {
     await dbConnect();
 
     const session = await getServerSession(req, res, authOptions);
-    console.log("Session:", session);
+    console.log("🔍 SESSION CHECK:", session);
 
     if (!session) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ message: "Unauthorized - No session" });
     }
 
-    // Get the string userId directly without any casting
     const userId = session.user.id;
-    
-    // Use the string userId directly
-    const deals = await Deal.find({ userId: userId }).sort({ createdAt: -1 });
+    console.log("🔍 USER ID:", userId);
+
+    const deals = await Deal.find({ userId }).sort({ createdAt: -1 });
+    console.log("📦 DEALS FOUND:", deals);
+
     return res.status(200).json(deals);
   } catch (error) {
-    console.error("Server error in /api/deals:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
+    console.error("🔥 Server error in /api/deals:", error);
+    return res.status(500).json({ message: "🔥 Internal Server Error", details: error.message });
   }
 }
