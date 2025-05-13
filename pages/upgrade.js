@@ -1,193 +1,271 @@
-import { useState, useEffect } from 'react';
-import { getSession, signOut } from 'next-auth/react';
-import { loadStripe } from '@stripe/stripe-js';
+import { useState } from 'react';
+import { getSession } from 'next-auth/react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { getTrialStatus } from '../lib/auth';
-
-// Load Stripe outside of component render to avoid recreating Stripe object on every render
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+import { isTrialActive, getTrialStatus } from '../lib/auth';
 
 export default function Upgrade({ user, trialStatus }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const router = useRouter();
+  const { canceled } = router.query;
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Handle subscription checkout
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  // Function to handle subscription checkout
   const handleSubscribe = async () => {
-    setLoading(true);
-    setError(null);
+    setIsLoading(true);
+    setError('');
 
     try {
-      const stripe = await stripePromise;
-      if (!stripe) {
-        throw new Error('Stripe failed to load');
-      }
-
-      // Create checkout session on the server
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          userId: user.id,
-          userEmail: user.email,
-        }),
+        body: JSON.stringify({}),
       });
 
-      const session = await response.json();
+      const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(session.message || 'Failed to create checkout session');
+      if (response.ok) {
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      } else {
+        setError(data.error || 'Failed to create checkout session');
+        setIsLoading(false);
       }
-
-      // Redirect to Stripe Checkout
-      const result = await stripe.redirectToCheckout({
-        sessionId: session.id,
-      });
-
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
-
     } catch (err) {
-      console.error('Subscription error:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      console.error('Error creating checkout session:', err);
+      setError('An unexpected error occurred. Please try again.');
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="bg-gray-900 text-white min-h-screen">
       <Head>
-        <title>Upgrade Your Account - RE Hustle V2</title>
-        <meta name="description" content="Upgrade to the full version of RE Hustle V2 and continue analyzing real estate deals" />
+        <title>Upgrade to Pro - RE Hustle V2</title>
+        <meta name="description" content="Upgrade to RE Hustle Pro to unlock all features" />
       </Head>
-
-      {/* Navigation */}
-      <nav className="bg-gray-800 p-4 shadow-md">
+      
+      <header className="bg-gray-800 p-4 shadow-md">
         <div className="container mx-auto flex justify-between items-center">
-          <Link href="/">
-            <span className="text-2xl font-bold text-green-400 cursor-pointer">RE Hustle V2</span>
-          </Link>
+          <div className="flex items-center space-x-6">
+            <h1 className="text-2xl font-bold text-green-400">RE Hustle V2</h1>
+            <nav>
+              <ul className="flex space-x-4">
+                <li>
+                  <Link href="/dashboard" className="hover:text-green-400">
+                    Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/analyze-deal" className="hover:text-green-400">
+                    Analyze Deal
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/saved-deals" className="hover:text-green-400">
+                    Saved Deals
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/account" className="hover:text-green-400">
+                    Account
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          </div>
           <div>
-            <button
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="text-gray-300 hover:text-white"
-            >
-              Sign Out
-            </button>
+            <Link href="/dashboard" className="text-gray-300 hover:text-white">
+              Back to Dashboard
+            </Link>
           </div>
         </div>
-      </nav>
-
-      <main className="container mx-auto px-4 py-10">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              {trialStatus.isActive 
-                ? 'Your Free Trial is Active'
-                : 'Your Free Trial Has Ended'}
-            </h1>
-            
-            <p className="text-xl text-gray-300 mb-4">
-              {trialStatus.isActive
-                ? `You have ${trialStatus.daysRemaining} days remaining in your trial. Upgrade now to ensure uninterrupted access.`
-                : 'Subscribe now to continue analyzing real estate deals with RE Hustle V2.'}
+      </header>
+      
+      <main className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        {canceled && (
+          <div className="bg-yellow-900 border-l-4 border-yellow-500 p-4 mb-8">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-300">
+                  Your payment was canceled. You can try again when you're ready.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      
+        {error && (
+          <div className="bg-red-900 border-l-4 border-red-500 p-4 mb-8">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-300">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-extrabold text-white mb-4">Upgrade to RE Hustle Pro</h1>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Get unlimited access to our powerful deal analysis tools and take your real estate investing to the next level.
             </p>
           </div>
-
-          {/* Pricing */}
-          <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
-            <div className="p-8 border-b border-gray-700">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-bold">Professional Plan</h2>
-                  <p className="text-gray-300 mt-2">Full access to all features</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold">
-                    $47<span className="text-lg font-normal text-gray-400">/month</span>
+          
+          {user.isSubscribed ? (
+            <div className="bg-gray-800 rounded-lg p-8 shadow-xl text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-800 mb-6">
+                <svg className="w-8 h-8 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">You're already a Pro member!</h2>
+              <p className="text-lg text-gray-300 mb-6">
+                Your subscription is active and you have full access to all features.
+              </p>
+              <div className="bg-gray-700 rounded-lg p-4 max-w-md mx-auto mb-6">
+                <div className="grid grid-cols-2 gap-4 text-left">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">Subscription Status</p>
+                    <p className="mt-1 text-sm text-gray-200 capitalize">{user.subscriptionStatus || 'active'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">Next Billing Date</p>
+                    <p className="mt-1 text-sm text-gray-200">{formatDate(user.subscriptionPeriodEnd)}</p>
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div className="p-8">
-              <h3 className="font-bold mb-4">Includes:</h3>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-start">
-                  <span className="text-green-400 mr-2">✓</span>
-                  <span>Unlimited deal analysis</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-green-400 mr-2">✓</span>
-                  <span>All property types (residential, multi-family, commercial, land)</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-green-400 mr-2">✓</span>
-                  <span>Advanced Sniper Score algorithm</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-green-400 mr-2">✓</span>
-                  <span>CRM integration (Podio, GoHighLevel, Notion, REI Reply)</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-green-400 mr-2">✓</span>
-                  <span>Deal tracking and management</span>
-                </li>
-              </ul>
-
-              {error && (
-                <div className="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-6">
-                  <p className="text-red-400">{error}</p>
-                </div>
-              )}
-
-              <button
-                onClick={handleSubscribe}
-                disabled={loading}
-                className={`w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg mb-4 ${
-                  loading ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
+              <Link 
+                href="/dashboard" 
+                className="inline-flex items-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
               >
-                {loading ? 'Processing...' : 'Subscribe Now'}
-              </button>
-
-              <p className="text-center text-gray-400 text-sm">
-                Secure payment processing by Stripe. Cancel anytime.
-              </p>
+                Go to Dashboard
+              </Link>
             </div>
-          </div>
-
-          {/* Testimonial */}
-          <div className="mt-12 bg-gray-800 rounded-lg p-8 shadow-lg">
-            <div className="text-green-400 text-4xl mb-4">"</div>
-            <p className="text-lg mb-6 italic">
-              RE Hustle has completely transformed how I analyze potential deals. The subscription pays
-              for itself with just one good deal - and I found three in my first month using it!
-            </p>
-            <div>
-              <p className="font-bold">Michael T.</p>
-              <p className="text-gray-400">Real Estate Investor, Chicago</p>
+          ) : (
+            <div className="bg-gray-800 rounded-lg overflow-hidden shadow-xl">
+              <div className="px-6 py-8 text-center">
+                <h2 className="text-3xl font-bold text-white mb-4">RE Hustle Pro</h2>
+                <div className="flex items-center justify-center">
+                  <span className="text-5xl font-extrabold text-white">$47</span>
+                  <span className="ml-1.5 text-xl text-gray-400">/month</span>
+                </div>
+                
+                {!trialStatus.isActive && (
+                  <p className="mt-2 text-red-400">
+                    Your free trial has expired
+                  </p>
+                )}
+                
+                {trialStatus.isActive && (
+                  <p className="mt-2 text-blue-400">
+                    Your trial expires on {formatDate(trialStatus.expiresAt)}
+                  </p>
+                )}
+                
+                <ul className="mt-8 space-y-4 text-left">
+                  <li className="flex items-start">
+                    <svg className="h-6 w-6 text-green-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-gray-300">Unlimited property deal analysis</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-6 w-6 text-green-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-gray-300">Advanced Sniper Score™ algorithm</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-6 w-6 text-green-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-gray-300">CRM integration (Podio, GoHighLevel, Notion)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-6 w-6 text-green-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-gray-300">Unlimited deal storage</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-6 w-6 text-green-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-gray-300">Priority support</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-6 w-6 text-green-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-gray-300">Cancel anytime</span>
+                  </li>
+                </ul>
+                
+                <div className="mt-10">
+                  <button 
+                    onClick={handleSubscribe}
+                    disabled={isLoading}
+                    className={`w-full px-6 py-4 border border-transparent text-lg font-medium rounded-md text-white ${
+                      isLoading ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'
+                    } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition`}
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center justify-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </span>
+                    ) : (
+                      'Upgrade Now'
+                    )}
+                  </button>
+                </div>
+                
+                <p className="mt-4 text-sm text-gray-400">
+                  Secure payment powered by Stripe
+                </p>
+              </div>
             </div>
-          </div>
-
-          <div className="mt-12 text-center">
-            <p className="text-gray-400">
-              Questions about your subscription? <a href="#" className="text-green-400 hover:underline">Contact our support team</a>
-            </p>
-          </div>
+          )}
         </div>
       </main>
     </div>
   );
 }
 
+// Get server-side props to access user and trial status
 export async function getServerSideProps(context) {
   const session = await getSession(context);
   
+  // Redirect to login if not authenticated
   if (!session) {
     return {
       redirect: {
@@ -196,73 +274,15 @@ export async function getServerSideProps(context) {
       },
     };
   }
-  
-  try {
-    // Get trial status
-    const db = await import('../lib/mongodb').then(module => module.getDatabase());
-    const user = await db.collection('users').findOne({ email: session.user.email });
-    
-    if (!user) {
-      return {
-        redirect: {
-          destination: '/login',
-          permanent: false,
-        },
-      };
-    }
-    
-    // If user is already subscribed, redirect to dashboard
-    if (user.is_subscribed) {
-      return {
-        redirect: {
-          destination: '/dashboard',
-          permanent: false,
-        },
-      };
-    }
-    
-    // Calculate trial status
-    const trialStartDate = user.trial_start_date ? new Date(user.trial_start_date) : new Date();
-    const trialEndDate = new Date(trialStartDate);
-    trialEndDate.setDate(trialEndDate.getDate() + 7);
-    
-    const currentDate = new Date();
-    const isActive = currentDate < trialEndDate;
-    
-    // Calculate days remaining
-    const diffTime = trialEndDate.getTime() - currentDate.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const daysRemaining = Math.max(0, diffDays);
-    
-    return {
-      props: {
-        user: {
-          ...session.user,
-          id: user._id.toString(), // Convert ObjectId to string
-        },
-        trialStatus: {
-          isActive,
-          isSubscribed: false,
-          trialStartDate: trialStartDate.toISOString(),
-          trialEndDate: trialEndDate.toISOString(),
-          daysRemaining,
-        }
-      },
-    };
-  } catch (error) {
-    console.error('Error in getServerSideProps:', error);
-    
-    // Default trial status on error
-    return {
-      props: {
-        user: session.user,
-        trialStatus: {
-          isActive: false,
-          isSubscribed: false,
-          daysRemaining: 0,
-          error: 'Could not verify trial status'
-        }
-      },
-    };
-  }
+
+  // Get the user's trial status
+  const trialActive = await isTrialActive(session.user.userId);
+  const trialStatus = await getTrialStatus(session.user.userId);
+
+  return {
+    props: {
+      user: session.user,
+      trialStatus: trialStatus,
+    },
+  };
 }

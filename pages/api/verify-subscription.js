@@ -1,5 +1,5 @@
-import { getSession } from 'next-auth/react';
 import Stripe from 'stripe';
+import { getSession } from 'next-auth/react';
 import { getDatabase } from '../../lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { updateSubscriptionStatus } from '../../lib/auth';
@@ -8,83 +8,73 @@ import { updateSubscriptionStatus } from '../../lib/auth';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
-  // Only accept POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return res.status(405).end('Method Not Allowed');
   }
 
   try {
-    // Check user authentication
     const session = await getSession({ req });
     if (!session) {
-      return res.status(401).json({ message: 'Not authenticated' });
+      return res.status(401).json({ error: 'You must be logged in.' });
     }
 
-    // Get Stripe session ID from request
     const { sessionId } = req.body;
+    
     if (!sessionId) {
-      return res.status(400).json({ message: 'Session ID is required' });
+      return res.status(400).json({ error: 'Missing session ID' });
     }
 
-    // Retrieve checkout session from Stripe
+    // Retrieve the checkout session from Stripe
     const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+    
+    // Verify the session belongs to this user
+    if (!checkoutSession || !checkoutSession.metadata?.userId || 
+        checkoutSession.metadata.userId !== session.user.userId) {
+      return res.status(403).json({ error: 'Invalid session' });
+    }
 
-    // Ensure payment was successful
+    // Check if payment was successful
     if (checkoutSession.payment_status !== 'paid') {
-      return res.status(400).json({ message: 'Payment not completed' });
+      return res.status(400).json({ error: 'Payment has not been completed' });
     }
 
-    // Get the user ID from the session metadata
-    const userId = checkoutSession.metadata?.userId;
-    if (!userId) {
-      return res.status(400).json({ message: 'User ID not found in session metadata' });
-    }
+    const db = await getDatabase();
 
-    // Update the user's subscription status in MongoDB
+    let userObjectId;
     try {
-      let userObjectId;
-      
-      try {
-        // Try to convert string to ObjectId (for MongoDB)
-        userObjectId = new ObjectId(userId);
-      } catch (err) {
-        // If not a valid ObjectId, use the string as is (for fallback storage)
-        userObjectId = userId;
-      }
-      
-      const db = await getDatabase();
-      
-      // Update user's subscription status
-      const result = await db.collection('users').updateOne(
-        { _id: userObjectId },
-        { $set: { 
-          is_subscribed: true,
-          subscription_id: checkoutSession.subscription,
-          subscription_status: 'active',
-          subscription_updated_at: new Date()
-        }}
-      );
-      
-      if (result.modifiedCount === 0) {
-        throw new Error('User not found or not updated');
-      }
-      
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Subscription activated successfully' 
-      });
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-      return res.status(500).json({ 
-        message: 'Error updating subscription status', 
-        error: dbError.message 
-      });
+      // Try to convert string to ObjectId (for MongoDB)
+      userObjectId = new ObjectId(session.user.userId);
+    } catch (err) {
+      // If it's not a valid ObjectId, use the string as is
+      userObjectId = session.user.userId;
     }
+
+    // Update user subscription information
+    const result = await db.collection('users').updateOne(
+      { _id: userObjectId },
+      {
+        $set: {
+          is_subscribed: true,
+          stripe_customer_id: checkoutSession.customer,
+          stripe_subscription_id: checkoutSession.subscription,
+          subscription_status: 'active',
+          subscription_updated_at: new Date(),
+          // We don't have period_end yet from checkout session, 
+          // but it will be updated by the webhook
+        },
+      }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(500).json({ error: 'Failed to update subscription status' });
+    }
+
+    // Also update the session object so the user sees their updated status immediately
+    await updateSubscriptionStatus(session.user.userId, true);
+
+    res.status(200).json({ success: true });
   } catch (error) {
     console.error('Error verifying subscription:', error);
-    return res.status(500).json({
-      message: 'Error verifying subscription',
-      error: error.message
-    });
+    res.status(500).json({ error: 'Failed to verify subscription' });
   }
 }

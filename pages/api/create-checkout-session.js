@@ -1,45 +1,33 @@
-import { getSession } from 'next-auth/react';
 import Stripe from 'stripe';
-import { getDatabase } from '../../lib/mongodb';
-import { ObjectId } from 'mongodb';
+import { getSession } from 'next-auth/react';
 
 // Initialize Stripe with secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
-  // Only accept POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return res.status(405).end('Method Not Allowed');
   }
 
   try {
-    // Check user authentication
+    // Get user from session
     const session = await getSession({ req });
     if (!session) {
-      return res.status(401).json({ message: 'Not authenticated' });
+      return res.status(401).json({ error: 'You must be logged in.' });
     }
 
-    // Get user ID and email from request (or from session)
-    const { userId, userEmail } = req.body;
-    const email = userEmail || session.user.email;
+    const { userId, email } = session.user;
 
-    // Validate userId
-    if (!userId) {
-      return res.status(400).json({ message: 'User ID is required' });
-    }
-
-    // Create a new Checkout Session
+    // Create Stripe checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      mode: 'subscription',
-      customer_email: email,
       line_items: [
         {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: 'RE Hustle V2 - Professional Plan',
-              description: 'Monthly subscription for RE Hustle V2 deal analysis software',
+              name: 'RE Hustle Pro Subscription',
+              description: 'Monthly subscription to RE Hustle Pro',
             },
             unit_amount: 4700, // $47.00 in cents
             recurring: {
@@ -49,23 +37,18 @@ export default async function handler(req, res) {
           quantity: 1,
         },
       ],
-      // Pass the customer ID through metadata for webhook processing
-      metadata: {
-        userId: userId.toString(),
-      },
+      mode: 'subscription',
       success_url: `${req.headers.origin}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin}/upgrade`,
+      cancel_url: `${req.headers.origin}/upgrade?canceled=true`,
+      customer_email: email,
+      metadata: {
+        userId: userId,
+      },
     });
 
-    // Return the session ID
-    return res.status(200).json({
-      id: checkoutSession.id
-    });
+    res.status(200).json({ url: checkoutSession.url });
   } catch (error) {
     console.error('Error creating checkout session:', error);
-    return res.status(500).json({
-      message: 'Error creating checkout session',
-      error: error.message
-    });
+    res.status(500).json({ error: 'Failed to create checkout session.' });
   }
 }
