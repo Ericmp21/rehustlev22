@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   }
   
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, trial_start_date, is_subscribed } = req.body;
     
     // Basic validation
     if (!email || !password) {
@@ -20,10 +20,26 @@ export default async function handler(req, res) {
       return res.status(409).json({ message: 'User already exists' });
     }
     
-    // Create the new user
-    const user = await createUser({ email, password, name });
+    // Create the new user with trial information
+    const user = await createUser({ 
+      email, 
+      password, 
+      name,
+      trial_start_date: trial_start_date || new Date().toISOString(), // Ensure trial start date is set
+      is_subscribed: is_subscribed || false // Default to not subscribed
+    });
     
-    return res.status(201).json({ message: 'User created', user });
+    // Return success response but hide sensitive information
+    return res.status(201).json({ 
+      message: 'User created', 
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        trial_start_date: user.trial_start_date,
+        is_subscribed: user.is_subscribed
+      } 
+    });
   } catch (error) {
     console.error('Registration error:', error);
     return res.status(500).json({ message: 'Something went wrong', error: error.message });
