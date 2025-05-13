@@ -4,8 +4,23 @@ import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "../../../lib/mongodb";
 import { getUserByEmail, verifyPassword } from "../../../lib/auth";
 
+// Do a test connection to MongoDB
+let mongoDbConnected = false;
+(async () => {
+  try {
+    const client = await clientPromise;
+    const result = await client.db().command({ ping: 1 });
+    if (result.ok === 1) {
+      console.log("MongoDB connection successful");
+      mongoDbConnected = true;
+    }
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+  }
+})();
+
 export default NextAuth({
-  adapter: MongoDBAdapter(clientPromise),
+  ...(mongoDbConnected ? { adapter: MongoDBAdapter(clientPromise) } : {}),
   providers: [
     CredentialsProvider({
       name: "Credentials",

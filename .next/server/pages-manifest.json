@@ -5,6 +5,5 @@
   "/": "pages/index.js",
   "/404": "pages/404.js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/account": "pages/account.js",
   "/login": "pages/login.js"
 }
