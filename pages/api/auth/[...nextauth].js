@@ -4,24 +4,18 @@ import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "../../../lib/mongodb";
 import { getUserByEmail, verifyPassword } from "../../../lib/auth";
 
-// Do a test connection to MongoDB
-let mongoDbConnected = false;
-(async () => {
-  try {
-    const client = await clientPromise;
-    const result = await client.db().command({ ping: 1 });
-    if (result.ok === 1) {
-      console.log("MongoDB connection successful");
-      mongoDbConnected = true;
-    }
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-  }
-})();
-
+// Let's simplify our approach and make NextAuth more resilient
+// We'll avoid complex setup that could throw errors
 export default NextAuth({
-  // Always use the MongoDB adapter (it will fallback gracefully if connection fails)
-  adapter: MongoDBAdapter(clientPromise),
+  // Add adapter only if it's available in a try/catch
+  ...(() => {
+    try {
+      return { adapter: MongoDBAdapter(clientPromise) };
+    } catch (e) {
+      console.warn("MongoDB adapter initialization failed, falling back to JWT only");
+      return {}; // No adapter if MongoDB is unavailable
+    }
+  })(),
   providers: [
     CredentialsProvider({
       name: "Credentials",

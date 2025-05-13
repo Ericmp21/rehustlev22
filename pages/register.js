@@ -50,19 +50,38 @@ export default function Register() {
       // Show success message
       setSuccess(true);
 
-      // Sign in the user automatically
+      // Sign in the user automatically with improved error handling
       setTimeout(async () => {
-        const result = await signIn('credentials', {
-          redirect: false,
-          email,
-          password,
-        });
+        console.log("Auto-login after registration for:", email);
+        
+        try {
+          const result = await signIn('credentials', {
+            redirect: false,
+            email,
+            password,
+            callbackUrl: '/dashboard', // Explicitly set callback URL
+          });
 
-        if (result?.error) {
-          throw new Error('Failed to sign in after registration');
+          console.log("Auto-login response:", {
+            ok: result?.ok,
+            status: result?.status,
+            hasError: !!result?.error,
+            url: result?.url
+          });
+
+          if (result?.error) {
+            console.error("Auto-login error:", result.error);
+            throw new Error('Failed to sign in after registration');
+          }
+
+          // Use window.location for a full page reload to ensure session is properly set
+          window.location.href = '/dashboard';
+        } catch (err) {
+          console.error("Error during auto-login:", err);
+          setError('Account created but login failed. Please try logging in manually.');
+          setLoading(false);
+          // Keep success=true to show the success message, but also show error
         }
-
-        router.push('/dashboard');
       }, 1500);
     } catch (err) {
       setError(err.message);

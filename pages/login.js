@@ -17,18 +17,31 @@ export default function Login() {
     setError("");
 
     try {
+      console.log("Login attempt for:", email);
+      
       const res = await signIn("credentials", {
         redirect: false,
         email,
         password,
+        callbackUrl: '/dashboard', // Explicitly set callback URL
+      });
+
+      console.log("Login response:", {
+        ok: res?.ok,
+        status: res?.status,
+        hasError: !!res?.error,
+        url: res?.url
       });
 
       if (res?.error) {
+        console.error("Login error:", res.error);
         setError("Invalid login. Please try again.");
       } else {
-        router.push("/dashboard");
+        // Use a forced page reload to ensure the session is properly loaded
+        window.location.href = "/dashboard";
       }
     } catch (err) {
+      console.error("Unexpected login error:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);

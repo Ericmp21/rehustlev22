@@ -140,7 +140,32 @@ export default function Dashboard({ user }) {
 }
 
 export async function getServerSideProps(context) {
-  // Use our enhanced authentication function that checks trial/subscription status
-  // This will automatically redirect to login or upgrade pages as needed
-  return await requireAuthentication(context);
+  // Add detailed logging to debug session issues
+  console.log("Dashboard getServerSideProps - Starting");
+  
+  const session = await getSession(context);
+  console.log("Dashboard session data:", session ? {
+    user: {
+      ...session.user,
+      // Don't log sensitive data
+      email: session.user.email ? "PRESENT" : "MISSING"
+    },
+    expires: session.expires
+  } : "NO SESSION");
+  
+  if (!session) {
+    console.log("Dashboard - No session, redirecting to login");
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: false,
+      },
+    };
+  }
+  
+  // Continue with enhanced authentication that checks trial/subscription
+  const authResult = await requireAuthentication(context);
+  console.log("Dashboard - Auth result type:", authResult.redirect ? "REDIRECT" : "PROPS");
+  
+  return authResult;
 }

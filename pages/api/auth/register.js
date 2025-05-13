@@ -6,21 +6,35 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method not allowed' });
   }
   
+  console.log("Register API called");
+  
   try {
     const { email, password, name, trial_start_date, is_subscribed } = req.body;
     
-    // Basic validation
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    // Enhanced validation with better error messages
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
     
     // Check if user already exists
+    console.log(`Checking if user with email ${email} exists`);
     const existingUser = await getUserByEmail(email);
+    
     if (existingUser) {
-      return res.status(409).json({ message: 'User already exists' });
+      console.log(`User with email ${email} already exists`);
+      return res.status(409).json({ message: 'User with this email already exists' });
     }
     
     // Create the new user with trial information
+    console.log(`Creating new user with email ${email}`);
     const user = await createUser({ 
       email, 
       password, 
@@ -29,9 +43,11 @@ export default async function handler(req, res) {
       is_subscribed: is_subscribed || false // Default to not subscribed
     });
     
+    console.log(`User created successfully with ID: ${user.id}`);
+    
     // Return success response but hide sensitive information
     return res.status(201).json({ 
-      message: 'User created', 
+      message: 'User created successfully', 
       user: {
         id: user.id,
         email: user.email,
@@ -42,6 +58,9 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Registration error:', error);
-    return res.status(500).json({ message: 'Something went wrong', error: error.message });
+    return res.status(500).json({ 
+      message: 'Failed to create account', 
+      error: error.message || 'Unknown error'
+    });
   }
 }
