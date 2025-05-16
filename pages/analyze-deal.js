@@ -834,6 +834,7 @@ try {
 
   // Show success message
   setSaveSuccess(true);
+  setTimeout(() => setSaveSuccess(false), 3000);
 
   // Check if CRM sync is enabled
   if (
@@ -846,65 +847,17 @@ try {
       // Sync deal to CRM
       const syncResult = await syncDealToCRM(savedDeal, accountData);
       setCrmSuccess(true);
-
-      // Clear CRM success message after 5 seconds
-      setTimeout(() => {
-        setCrmSuccess(false);
-      }, 5000);
+      setTimeout(() => setCrmSuccess(false), 5000);
     } catch (error) {
       setCrmError(error.message || "Failed to sync with CRM");
-
-      // Clear CRM error message after 5 seconds
-      setTimeout(() => {
-        setCrmError(null);
-      }, 5000);
+      setTimeout(() => setCrmError(null), 5000);
     }
   }
 } catch (error) {
   console.error("Deal saving error:", error);
 }
 
-        }
-      }
-      
-      // Clear save success message after 3 seconds
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 3000);
-    } catch (error) {
-      console.error("Error saving deal:", error);
-      
-      // Fall back to localStorage if API fails
-      try {
-        // Get existing saved deals
-        const existingDeals = localStorage.getItem('savedDeals') 
-          ? JSON.parse(localStorage.getItem('savedDeals')) 
-          : [];
-        
-        // Add ID for localStorage deals
-        newDeal.id = Date.now().toString();
-        
-        // Add to array
-        const updatedDeals = [newDeal, ...existingDeals];
-        
-        // Save to localStorage
-        localStorage.setItem('savedDeals', JSON.stringify(updatedDeals));
-        
-        // Show success message
-        setSaveSuccess(true);
-        
-        // Clear save success message after 3 seconds
-        setTimeout(() => {
-          setSaveSuccess(false);
-        }, 3000);
-      } catch (localError) {
-        console.error("Local storage fallback failed:", localError);
-        alert("Failed to save deal. Please try again.");
-      }
-    }
-  };
-
-  // Render property form based on selected type
+          
   const renderPropertyForm = () => {
     const currentFormData = formData[propertyType];
     
