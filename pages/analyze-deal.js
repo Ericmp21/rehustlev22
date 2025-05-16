@@ -827,7 +827,7 @@ export default function AnalyzeDeal({ user }) {
       });
       
       if (!response.ok) {
-        throw new Error(`Error saving deal: ${response.statusText}`);
+        throw new Error(Error saving deal: ${response.statusText});
       }
       
       const savedDeal = await response.json();
@@ -999,11 +999,11 @@ export default function AnalyzeDeal({ user }) {
                 
                 <div className="mb-6">
                   <div className="flex justify-center mb-4">
-                    <div className={`w-36 h-36 rounded-full flex items-center justify-center border-4 ${
+                    <div className={w-36 h-36 rounded-full flex items-center justify-center border-4 ${
                       result.sniperScore > 70 ? 'border-green-500 text-green-400' :
                       result.sniperScore >= 40 ? 'border-yellow-500 text-yellow-400' :
                       'border-red-500 text-red-400'
-                    }`}>
+                    }}>
                       <div className="text-center">
                         <div className="text-3xl font-bold">{result.sniperScore}</div>
                         <div className="text-sm">Sniper Score</div>
@@ -1019,10 +1019,10 @@ export default function AnalyzeDeal({ user }) {
                     
                     <div className="flex justify-between items-center border-b border-gray-700 pb-2">
                       <span className="font-medium">Risk Level:</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={px-2 py-1 rounded-full text-xs font-medium ${
                         result.riskLevel === 'Green' ? 'bg-green-900/50 text-green-300 border border-green-600' : 
                         result.riskLevel === 'Yellow' ? 'bg-yellow-900/50 text-yellow-300 border border-yellow-600' : 'bg-red-900/50 text-red-300 border border-red-600'
-                      }`}>{result.riskLevel}</span>
+                      }}>{result.riskLevel}</span>
                     </div>
                     
                     <div className="flex justify-between items-center border-b border-gray-700 pb-2">
@@ -1113,4 +1113,6 @@ export async function getServerSideProps(context) {
   // Use our enhanced authentication function that checks trial/subscription status
   // This will automatically redirect to login or upgrade pages as needed
   return await requireAuthentication(context);
-}
+} please just make all neccessary changes ill replace this with updated one. BE very careful not to break anything
+
+
