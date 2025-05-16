@@ -805,58 +805,65 @@ export default function AnalyzeDeal({ user }) {
     setCrmSuccess(false);
     setCrmError(null);
     
-    // Get current form data
-    const currentFormData = formData[propertyType];
-    
-    // Create new deal object with timestamp
-    const newDeal = {
-      timestamp: new Date().toISOString(),
-      propertyType,
-      ...currentFormData,
-      ...result,
-    };
-    
+   // Get current form data
+const currentFormData = formData[propertyType];
+
+// Create new deal object with timestamp
+const newDeal = {
+  timestamp: new Date().toISOString(),
+  propertyType,
+  ...currentFormData,
+  ...result,
+};
+
+try {
+  // Save deal to MongoDB via API
+  const response = await fetch('/api/deals', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(newDeal),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error saving deal: ${response.statusText}`);
+  }
+
+  const savedDeal = await response.json();
+
+  // Show success message
+  setSaveSuccess(true);
+
+  // Check if CRM sync is enabled
+  if (
+    accountData &&
+    accountData.preferredCRM !== "None" &&
+    accountData.crmAPIKey &&
+    accountData.syncAutomatically
+  ) {
     try {
-      // Save deal to MongoDB via API
-      const response = await fetch('/api/deals', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newDeal),
-      });
-      
-      if (!response.ok) {
-        throw new Error(Error saving deal: ${response.statusText});
-      }
-      
-      const savedDeal = await response.json();
-      
-      // Show success message
-      setSaveSuccess(true);
-      
-      // Check if CRM sync is enabled
-      if (accountData && 
-          accountData.preferredCRM !== "None" && 
-          accountData.crmAPIKey && 
-          accountData.syncAutomatically) {
-        
-        try {
-          // Sync deal to CRM
-          const syncResult = await syncDealToCRM(savedDeal, accountData);
-          setCrmSuccess(true);
-          
-          // Clear CRM success message after 5 seconds
-          setTimeout(() => {
-            setCrmSuccess(false);
-          }, 5000);
-        } catch (error) {
-          setCrmError(error.message || "Failed to sync with CRM");
-          
-          // Clear CRM error message after 5 seconds
-          setTimeout(() => {
-            setCrmError(null);
-          }, 5000);
+      // Sync deal to CRM
+      const syncResult = await syncDealToCRM(savedDeal, accountData);
+      setCrmSuccess(true);
+
+      // Clear CRM success message after 5 seconds
+      setTimeout(() => {
+        setCrmSuccess(false);
+      }, 5000);
+    } catch (error) {
+      setCrmError(error.message || "Failed to sync with CRM");
+
+      // Clear CRM error message after 5 seconds
+      setTimeout(() => {
+        setCrmError(null);
+      }, 5000);
+    }
+  }
+} catch (error) {
+  console.error("Deal saving error:", error);
+}
+
         }
       }
       
